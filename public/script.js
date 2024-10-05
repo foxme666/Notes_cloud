@@ -33,19 +33,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showNoteEditor(note = null) {
-    const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-    document.getElementById('noteTitle').value = note ? note.title : '';
-    document.getElementById('noteContent').value = note ? note.content : '';
-    editingNoteId = note ? note.id : null;
-    noteEditorOverlay.style.display = 'flex'; // 使用 display 控制显示
+    if (noteEditorOverlay) {
+        document.getElementById('noteTitle').value = note ? note.title : '';
+        document.getElementById('noteContent').value = note ? note.content : '';
+        editingNoteId = note ? note.id : null;
+        noteEditorOverlay.style.display = 'flex'; // 确保显示编辑框
+    }
 }
 
 function hideNoteEditor() {
-    const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-    noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
-    setTimeout(() => {
-        editingNoteId = null;
-    }, 300); // 等待动画完成
+    if (noteEditorOverlay) {
+        noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
+        setTimeout(() => {
+            editingNoteId = null;
+        }, 300); // 等待动画完成
+    }
 }
 
 async function saveNote() {
