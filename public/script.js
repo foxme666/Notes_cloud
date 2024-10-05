@@ -109,9 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function deleteNote(id) {
         try {
             console.log(`Attempting to delete note with id: ${id}`);
-            const response = await fetch(`/api/notes/${id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
+            const response = await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', id: id })
             });
             console.log('Delete response:', response);
             if (response.ok) {

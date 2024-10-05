@@ -20,11 +20,6 @@ export async function onRequest(context) {
     return handlePostNote(request, env);
   }
 
-  // 处理 DELETE 请求
-  if (request.method === 'DELETE' && path.startsWith('/api/notes/')) {
-    return handleDeleteNote(path, env);
-  }
-
   // 如果没有匹配的路由，返回 404
   return new Response(JSON.stringify({ error: 'Not Found' }), { 
     status: 404,
@@ -46,14 +41,18 @@ async function handleGetNotes(env, url) {
   try {
     const page = parseInt(url.searchParams.get('page')) || 1;
     const pageSize = parseInt(url.searchParams.get('pageSize')) || 10;
-    const notesString = await env.NOTES_KV.get('notes');
-    const allNotes = JSON.parse(notesString || '[]');
+    const notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
     
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    const paginatedNotes = allNotes.slice(startIndex, endIndex);
+    const paginatedNoteIds = notesIndex.slice(startIndex, endIndex);
     
-    const totalPages = Math.ceil(allNotes.length / pageSize);
+    const paginatedNotes = await Promise.all(paginatedNoteIds.map(async (id) => {
+      const noteString = await env.NOTES_KV.get(`note:${id}`);
+      return JSON.parse(noteString);
+    }));
+
+    const totalPages = Math.ceil(notesIndex.length / pageSize);
 
     return new Response(JSON.stringify({
       notes: paginatedNotes,
@@ -71,24 +70,29 @@ async function handleGetNotes(env, url) {
 
 async function handlePostNote(request, env) {
   try {
-    const newNote = await request.json();
-    const notesString = await env.NOTES_KV.get('notes');
-    const notes = JSON.parse(notesString || '[]');
-    
-    const existingIndex = notes.findIndex(note => note.id === newNote.id);
-    if (existingIndex !== -1) {
-      notes[existingIndex] = newNote;
-    } else {
-      notes.push(newNote);
+    const data = await request.json();
+    if (data.action === 'delete') {
+      return handleDeleteNoteById(data.id, env);
     }
-    
-    await env.NOTES_KV.put('notes', JSON.stringify(notes));
+
+    const newNote = data;
+    const noteId = newNote.id || Date.now().toString();
+    newNote.id = noteId;
+
+    await env.NOTES_KV.put(`note:${noteId}`, JSON.stringify(newNote));
+
+    let notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
+    if (!notesIndex.includes(noteId)) {
+      notesIndex.push(noteId);
+      await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
+    }
+
     return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
       status: 200,
       headers: getResponseHeaders()
     });
   } catch (error) {
-    console.error('Error saving note:', error);
+    console.error('Error processing note:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
       status: 500,
       headers: getResponseHeaders()
@@ -96,13 +100,12 @@ async function handlePostNote(request, env) {
   }
 }
 
-async function handleDeleteNote(path, env) {
+async function handleDeleteNoteById(noteId, env) {
   try {
-    const noteId = parseInt(path.split('/').pop());
-    const notesString = await env.NOTES_KV.get('notes');
-    let notes = JSON.parse(notesString || '[]');
-    notes = notes.filter(note => note.id !== noteId);
-    await env.NOTES_KV.put('notes', JSON.stringify(notes));
+    await env.NOTES_KV.delete(`note:${noteId}`);
+    let notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
+    notesIndex = notesIndex.filter(id => id !== noteId);
+    await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
     return new Response(JSON.stringify({ message: 'Note deleted successfully' }), { 
       status: 200,
       headers: getResponseHeaders()
