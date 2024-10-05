@@ -3,13 +3,15 @@ let editingNoteId = null;
 let currentPage = 1;
 const pageSize = 10;
 let paginationContainer;
+let notesList;
+let noteEditorOverlay;
 
 document.addEventListener('DOMContentLoaded', () => {
-    const noteEditorOverlay = document.getElementById('noteEditorOverlay');
+    noteEditorOverlay = document.getElementById('noteEditorOverlay');
     const newNoteBtn = document.getElementById('newNote');
     const saveNoteBtn = document.getElementById('saveNote');
     const cancelEditBtn = document.getElementById('cancelEdit');
-    const notesList = document.getElementById('notesList');
+    notesList = document.getElementById('notesList');
     const noteTitleInput = document.getElementById('noteTitle');
     const noteContentInput = document.getElementById('noteContent');
 
@@ -22,9 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelEditBtn.addEventListener('click', hideNoteEditor);
 
     // 确保编辑框初始状态为隐藏
-    noteEditorOverlay.classList.add('hidden');
+    if (noteEditorOverlay) {
+        noteEditorOverlay.classList.add('hidden');
+    }
 
-    notesList.style.opacity = '0';  // 初始化为透明
+    if (notesList) {
+        notesList.style.opacity = '0';  // 初始化为透明
+    }
 
     loadNotes();
 });
@@ -200,8 +206,12 @@ async function loadNotes(page = 1) {
         console.log(`Loading notes for page ${page}`);
         
         // 添加淡出效果
-        notesList.classList.add('fade-out');
-        paginationContainer.classList.add('fade-out');
+        if (notesList) {
+            notesList.classList.add('fade-out');
+        }
+        if (paginationContainer) {
+            paginationContainer.classList.add('fade-out');
+        }
         
         const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
         console.log('Response status:', response.status);
@@ -216,15 +226,23 @@ async function loadNotes(page = 1) {
                 renderPagination(data.totalPages, page);
                 
                 // 添加淡入效果
-                notesList.classList.remove('fade-out');
-                notesList.classList.add('fade-in');
-                paginationContainer.classList.remove('fade-out');
-                paginationContainer.classList.add('fade-in');
+                if (notesList) {
+                    notesList.classList.remove('fade-out');
+                    notesList.classList.add('fade-in');
+                }
+                if (paginationContainer) {
+                    paginationContainer.classList.remove('fade-out');
+                    paginationContainer.classList.add('fade-in');
+                }
                 
                 // 移除 fade-in 类，为下一次动画做准备
                 setTimeout(() => {
-                    notesList.classList.remove('fade-in');
-                    paginationContainer.classList.remove('fade-in');
+                    if (notesList) {
+                        notesList.classList.remove('fade-in');
+                    }
+                    if (paginationContainer) {
+                        paginationContainer.classList.remove('fade-in');
+                    }
                 }, 300);
             }, 300);
         } else {
@@ -237,8 +255,12 @@ async function loadNotes(page = 1) {
         showNotification('加载笔记失败，请稍后再试。', 'error');
         
         // 出错时也需要移除 fade-out 类
-        notesList.classList.remove('fade-out');
-        paginationContainer.classList.remove('fade-out');
+        if (notesList) {
+            notesList.classList.remove('fade-out');
+        }
+        if (paginationContainer) {
+            paginationContainer.classList.remove('fade-out');
+        }
     }
 }
 
