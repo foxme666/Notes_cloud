@@ -1,7 +1,7 @@
 let notes = [];
 let editingNoteId = null;
 let currentPage = 1;
-const pageSize = 20;
+const pageSize = 10; // 更新为10
 
 document.addEventListener('DOMContentLoaded', () => {
     const newNoteBtn = document.getElementById('newNote');
@@ -65,32 +65,38 @@ document.addEventListener('DOMContentLoaded', () => {
     async function saveNote() {
         const title = noteTitleInput.value.trim();
         const content = noteContentInput.value.trim();
-        if (title && content) {
-            try {
-                const note = {
-                    id: editingNoteId || Date.now(),
-                    title,
-                    content,
-                    date: new Date().toLocaleString('zh-CN')
-                };
-                const response = await fetch('/api/notes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(note),
-                });
-                if (response.ok) {
-                    showNotification(editingNoteId ? '笔记更新成功' : '笔记保存成功', 'success');
-                    hideNoteEditor();
-                    loadNotes(currentPage);
-                } else {
-                    throw new Error('Failed to save note');
-                }
-            } catch (error) {
-                console.error('Failed to save note:', error);
-                showNotification('保存笔记失败，请稍后再试。', 'error');
+        if (!title) {
+            showNotification('标题不能为空', 'error');
+            return;
+        }
+        if (!content) {
+            showNotification('内容不能为空', 'error');
+            return;
+        }
+        try {
+            const note = {
+                id: editingNoteId || Date.now(),
+                title,
+                content,
+                date: new Date().toLocaleString('zh-CN')
+            };
+            const response = await fetch('/api/notes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(note),
+            });
+            if (response.ok) {
+                showNotification(editingNoteId ? '笔记更新成功' : '笔记保存成功', 'success');
+                hideNoteEditor();
+                loadNotes(currentPage);
+            } else {
+                throw new Error('Failed to save note');
             }
+        } catch (error) {
+            console.error('Failed to save note:', error);
+            showNotification('保存笔记失败，请稍后再试。', 'error');
         }
     }
 
@@ -132,7 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteNote(id) {
         try {
-            const response = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/notes/${id}`, { 
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 showNotification('笔记删除成功', 'success');
                 loadNotes(currentPage);

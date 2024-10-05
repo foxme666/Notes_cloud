@@ -3,11 +3,22 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const path = url.pathname;
 
+  // 添加 OPTIONS 请求的处理
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
+  }
+
   if (path === '/api/notes') {
     if (request.method === 'GET') {
       try {
         const page = parseInt(url.searchParams.get('page')) || 1;
-        const pageSize = parseInt(url.searchParams.get('pageSize')) || 20;
+        const pageSize = parseInt(url.searchParams.get('pageSize')) || 10; // 更新为10
         const notesString = await env.NOTES_KV.get('notes');
         const allNotes = JSON.parse(notesString || '[]');
         
