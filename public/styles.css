@@ -209,3 +209,39 @@ button:hover {
         height: 150px;
     }
 }
+
+/* 在文件末尾添加以下样式 */
+
+#pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    padding: 10px 0;
+}
+
+.page-btn {
+    margin: 0 5px;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.page-btn.active {
+    background-color: #007aff;
+    color: white;
+}
+
+.page-ellipsis {
+    margin: 0 5px;
+}
+
+#noteEditorOverlay {
+    display: none;
+}
+
+#noteEditorOverlay.show {
+    display: flex;
+}
