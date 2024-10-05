@@ -4,8 +4,12 @@
   "exclude": [],
   "routes": [
     {
-      "src": "/api/.*",
-      "dest": "/api"
+      "src": "/api/notes",
+      "dest": "/api/notes"
+    },
+    {
+      "src": "/api/notes/.*",
+      "dest": "/api/notes"
     }
   ]
 }
