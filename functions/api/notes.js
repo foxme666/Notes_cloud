@@ -39,18 +39,27 @@ function handleCORS() {
 
 async function handleGetNotes(env, url) {
   try {
+    console.log('Handling GET request for notes');
     const page = parseInt(url.searchParams.get('page')) || 1;
     const pageSize = parseInt(url.searchParams.get('pageSize')) || 10;
-    const notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
+    console.log(`Page: ${page}, PageSize: ${pageSize}`);
+
+    const notesIndexString = await env.NOTES_KV.get('notesIndex');
+    console.log('Notes index string:', notesIndexString);
+    const notesIndex = JSON.parse(notesIndexString || '[]');
+    console.log('Parsed notes index:', notesIndex);
     
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedNoteIds = notesIndex.slice(startIndex, endIndex);
+    console.log('Paginated note IDs:', paginatedNoteIds);
     
     const paginatedNotes = await Promise.all(paginatedNoteIds.map(async (id) => {
       const noteString = await env.NOTES_KV.get(`note:${id}`);
+      console.log(`Note ${id} string:`, noteString);
       return JSON.parse(noteString);
     }));
+    console.log('Paginated notes:', paginatedNotes);
 
     const totalPages = Math.ceil(notesIndex.length / pageSize);
 
