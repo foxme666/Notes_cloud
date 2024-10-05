@@ -38,13 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showNoteEditor(note = null) {
     const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-    const noteTitleInput = document.getElementById('noteTitle');
-    const noteContentInput = document.getElementById('noteContent');
-
-    noteTitleInput.value = note ? note.title : '';
-    noteContentInput.value = note ? note.content : '';
+    document.getElementById('noteTitle').value = note ? note.title : '';
+    document.getElementById('noteContent').value = note ? note.content : '';
     editingNoteId = note ? note.id : null;
-
     noteEditorOverlay.classList.add('show');
 }
 
@@ -57,8 +53,8 @@ function hideNoteEditor() {
 }
 
 async function saveNote() {
-    const title = noteTitleInput.value.trim();
-    const content = noteContentInput.value.trim();
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
     if (!title || !content) {
         showNotification(title ? '内容不能为空' : '标题不能为空', 'error');
         return;
