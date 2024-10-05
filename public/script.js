@@ -209,25 +209,23 @@ async function loadNotes(page = 1) {
     try {
         console.log(`Loading notes for page ${page}`);
         
-        // 添加淡出效果
+        // 移除淡出效果，确保元素可见
         if (notesList) {
-            notesList.classList.add('fade-out');
+            notesList.classList.remove('fade-out');
         }
         if (paginationContainer) {
-            paginationContainer.classList.add('fade-out');
+            paginationContainer.classList.remove('fade-out');
         }
         
         const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
-        console.log('Response status:', response.status);
         if (response.ok) {
             const data = await response.json();
-            console.log('Received data:', data);
             notes = data.notes;
             
             renderNotes();
             renderPagination(data.totalPages, page);
             
-            // 添加淡入效果
+            // 确保元素可见
             if (notesList) {
                 notesList.classList.remove('fade-out');
                 notesList.classList.add('fade-in');
@@ -248,7 +246,6 @@ async function loadNotes(page = 1) {
             }, 300);
         } else {
             const errorText = await response.text();
-            console.error('Error response:', errorText);
             throw new Error('Failed to load notes: ' + response.statusText);
         }
     } catch (error) {
