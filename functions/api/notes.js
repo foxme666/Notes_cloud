@@ -5,12 +5,22 @@ export async function onRequest(context) {
 
   if (path === '/api/notes') {
     if (request.method === 'GET') {
-      const notes = await env.NOTES_KV.get('notes');
-      return new Response(notes || '[]', { headers: { 'Content-Type': 'application/json' } });
+      try {
+        const notes = await env.NOTES_KV.get('notes');
+        return new Response(notes || '[]', { headers: { 'Content-Type': 'application/json' } });
+      } catch (error) {
+        console.error('Error getting notes:', error);
+        return new Response('Internal Server Error', { status: 500 });
+      }
     } else if (request.method === 'POST') {
-      const notes = await request.json();
-      await env.NOTES_KV.put('notes', JSON.stringify(notes));
-      return new Response('OK', { status: 200 });
+      try {
+        const notes = await request.json();
+        await env.NOTES_KV.put('notes', JSON.stringify(notes));
+        return new Response('OK', { status: 200 });
+      } catch (error) {
+        console.error('Error saving notes:', error);
+        return new Response('Internal Server Error', { status: 500 });
+      }
     } else {
       return new Response('Method Not Allowed', { status: 405 });
     }
