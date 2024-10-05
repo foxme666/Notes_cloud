@@ -1,3 +1,5 @@
+const noteEditorOverlay = document.getElementById('noteEditorOverlay');
+
 let notes = [];
 let editingNoteId = null;
 let currentPage = 1;
@@ -45,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNoteEditor(note = null) {
-        noteEditor.classList.remove('hidden');
+        noteEditorOverlay.classList.remove('hidden');
         if (note) {
             noteTitleInput.value = note.title;
             noteContentInput.value = note.content;
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function hideNoteEditor() {
-        noteEditor.classList.add('hidden');
+        noteEditorOverlay.classList.add('hidden');
         editingNoteId = null;
     }
 

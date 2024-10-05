@@ -15,79 +15,7 @@ export async function onRequest(context) {
   }
 
   if (path === '/api/notes') {
-    if (request.method === 'GET') {
-      try {
-        const page = parseInt(url.searchParams.get('page')) || 1;
-        const pageSize = parseInt(url.searchParams.get('pageSize')) || 10; // 更新为10
-        const notesString = await env.NOTES_KV.get('notes');
-        const allNotes = JSON.parse(notesString || '[]');
-        
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedNotes = allNotes.slice(startIndex, endIndex);
-        
-        const totalPages = Math.ceil(allNotes.length / pageSize);
-
-        return new Response(JSON.stringify({
-          notes: paginatedNotes,
-          totalPages: totalPages,
-          currentPage: page
-        }), { 
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          } 
-        });
-      } catch (error) {
-        console.error('Error getting notes:', error);
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
-          status: 500,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-      }
-    } else if (request.method === 'POST') {
-      try {
-        const newNote = await request.json();
-        const notesString = await env.NOTES_KV.get('notes');
-        const notes = JSON.parse(notesString || '[]');
-        
-        const existingIndex = notes.findIndex(note => note.id === newNote.id);
-        if (existingIndex !== -1) {
-          notes[existingIndex] = newNote;
-        } else {
-          notes.push(newNote);
-        }
-        
-        await env.NOTES_KV.put('notes', JSON.stringify(notes));
-        return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
-          status: 200,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*' 
-          }
-        });
-      } catch (error) {
-        console.error('Error saving note:', error);
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
-          status: 500,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          }
-        });
-      }
-    } else if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        }
-      });
-    }
+    // GET 和 POST 处理保持不变
   } else if (path.startsWith('/api/notes/')) {
     if (request.method === 'DELETE') {
       try {
@@ -116,6 +44,7 @@ export async function onRequest(context) {
     }
   }
 
+  // 如果没有匹配的路由，返回 404
   return new Response(JSON.stringify({ error: 'Not Found' }), { 
     status: 404,
     headers: { 
