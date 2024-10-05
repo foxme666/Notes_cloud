@@ -193,4 +193,26 @@ function showNotification(message, type) {
     }, 3000);
 }
 
+async function loadNotes(page = 1) {
+    try {
+        console.log(`Loading notes for page ${page}`);
+        const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
+        console.log('Response status:', response.status);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Received data:', data);
+            notes = data.notes;
+            renderNotes();
+            renderPagination(data.totalPages, page);
+        } else {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error('Failed to load notes: ' + response.statusText);
+        }
+    } catch (error) {
+        console.error('Failed to load notes:', error);
+        showNotification('加载笔记失败，请稍后再试。', 'error');
+    }
+}
+
 loadNotes();
