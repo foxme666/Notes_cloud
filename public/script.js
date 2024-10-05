@@ -6,6 +6,7 @@ let currentPage = 1;
 const pageSize = 10; // 更新为10
 
 document.addEventListener('DOMContentLoaded', () => {
+    noteEditorOverlay = document.getElementById('noteEditorOverlay');
     const newNoteBtn = document.getElementById('newNote');
     const saveNoteBtn = document.getElementById('saveNote');
     const cancelEditBtn = document.getElementById('cancelEdit');
@@ -94,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideNoteEditor();
                 loadNotes(currentPage);
             } else {
-                throw new Error('Failed to save note');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save note');
             }
         } catch (error) {
             console.error('Failed to save note:', error);
