@@ -40,8 +40,10 @@ function showNoteEditor(note = null) {
         document.getElementById('noteContent').value = note ? note.content : '';
         editingNoteId = note ? note.id : null;
         noteEditorOverlay.style.display = 'flex';
-        noteEditorOverlay.style.opacity = '1';
-        noteEditorOverlay.style.visibility = 'visible';
+        document.body.style.overflow = 'hidden'; // 防止背景滚动
+        setTimeout(() => {
+            noteEditorOverlay.style.opacity = '1';
+        }, 10); // 小延迟以确保过渡效果生效
     } else {
         console.error('Note editor overlay not found');
     }
@@ -49,12 +51,12 @@ function showNoteEditor(note = null) {
 
 function hideNoteEditor() {
     if (noteEditorOverlay) {
-        noteEditorOverlay.style.display = 'none';
         noteEditorOverlay.style.opacity = '0';
-        noteEditorOverlay.style.visibility = 'hidden';
+        document.body.style.overflow = ''; // 恢复背景滚动
         setTimeout(() => {
+            noteEditorOverlay.style.display = 'none';
             editingNoteId = null;
-        }, 300);
+        }, 300); // 等待过渡效果完成
     }
 }
 
