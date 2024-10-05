@@ -57,14 +57,17 @@ async function handleGetNotes(env, url) {
     const paginatedNotes = await Promise.all(paginatedNoteIds.map(async (id) => {
       const noteString = await env.NOTES_KV.get(`note:${id}`);
       console.log(`Note ${id} string:`, noteString);
-      return JSON.parse(noteString);
+      return noteString ? JSON.parse(noteString) : null;
     }));
     console.log('Paginated notes:', paginatedNotes);
+
+    // 过滤掉 null 笔记
+    const validNotes = paginatedNotes.filter(note => note !== null);
 
     const totalPages = Math.ceil(notesIndex.length / pageSize);
 
     return new Response(JSON.stringify({
-      notes: paginatedNotes,
+      notes: validNotes,
       totalPages: totalPages,
       currentPage: page
     }), { headers: getResponseHeaders() });
@@ -88,13 +91,18 @@ async function handlePostNote(request, env) {
     const noteId = newNote.id || Date.now().toString();
     newNote.id = noteId;
 
-    await env.NOTES_KV.put(`note:${noteId}`, JSON.stringify(newNote));
+    // 使用事务来确保原子性
+    await env.NOTES_KV.transaction(async (txn) => {
+      // 保存笔记
+      await txn.put(`note:${noteId}`, JSON.stringify(newNote));
 
-    let notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
-    if (!notesIndex.includes(noteId)) {
-      notesIndex.push(noteId);
-      await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
-    }
+      // 更新索引
+      let notesIndex = JSON.parse(await txn.get('notesIndex') || '[]');
+      if (!notesIndex.includes(noteId)) {
+        notesIndex.push(noteId);
+        await txn.put('notesIndex', JSON.stringify(notesIndex));
+      }
+    });
 
     return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
       status: 200,
@@ -111,10 +119,17 @@ async function handlePostNote(request, env) {
 
 async function handleDeleteNoteById(noteId, env) {
   try {
-    await env.NOTES_KV.delete(`note:${noteId}`);
-    let notesIndex = JSON.parse(await env.NOTES_KV.get('notesIndex') || '[]');
-    notesIndex = notesIndex.filter(id => id !== noteId);
-    await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
+    // 使用事务来确保原子性
+    await env.NOTES_KV.transaction(async (txn) => {
+      // 删除笔记
+      await txn.delete(`note:${noteId}`);
+
+      // 更新索引
+      let notesIndex = JSON.parse(await txn.get('notesIndex') || '[]');
+      notesIndex = notesIndex.filter(id => id !== noteId);
+      await txn.put('notesIndex', JSON.stringify(notesIndex));
+    });
+
     return new Response(JSON.stringify({ message: 'Note deleted successfully' }), { 
       status: 200,
       headers: getResponseHeaders()
