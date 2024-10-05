@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云端备忘录</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>云端备忘录</h1>
+            <button id="newNote">新建备忘录</button>
+        </header>
+        <main>
+            <div id="notesList"></div>
+            <div id="noteEditor" class="hidden">
+                <input type="text" id="noteTitle" placeholder="标题">
+                <textarea id="noteContent" placeholder="在此输入内容..."></textarea>
+                <div class="button-group">
+                    <button id="saveNote">保存</button>
+                    <button id="cancelEdit" class="secondary">取消</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
