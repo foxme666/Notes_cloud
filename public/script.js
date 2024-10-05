@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteNote(id) {
         try {
-            const response = await fetch(`/api/notes/${id}`, { 
+            const response = await fetch(`/api/notes/${id}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('笔记删除成功', 'success');
                 loadNotes(currentPage);
             } else {
+                console.log(response);
                 throw new Error('Failed to delete note');
             }
         } catch (error) {

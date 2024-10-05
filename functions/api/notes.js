@@ -82,6 +82,7 @@ export async function onRequest(context) {
     }
   } else if (path.startsWith('/api/notes/')) {
     if (request.method === 'DELETE') {
+      console.log(开始删除);
       try {
         const noteId = parseInt(path.split('/').pop());
         const notesString = await env.NOTES_KV.get('notes');
@@ -105,6 +106,16 @@ export async function onRequest(context) {
           }
         });
       }
+    } else {
+      // 处理其他方法的请求
+      return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
+        status: 405,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Allow': 'DELETE'
+        }
+      });
     }
   }
 
