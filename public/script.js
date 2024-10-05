@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelEditBtn = document.getElementById('cancelEdit');
     notesList = document.getElementById('notesList');
 
+    // 初始化 paginationContainer
+    paginationContainer = document.getElementById('pagination');
+    if (!paginationContainer) {
+        paginationContainer = document.createElement('div');
+        paginationContainer.id = 'pagination';
+        document.querySelector('.container').appendChild(paginationContainer);
+    }
+
     newNoteBtn.addEventListener('click', () => showNoteEditor());
     saveNoteBtn.addEventListener('click', saveNote);
     cancelEditBtn.addEventListener('click', hideNoteEditor);
@@ -144,6 +152,11 @@ async function deleteNote(id) {
 }
 
 function renderPagination(totalPages, currentPage) {
+    if (!paginationContainer) {
+        console.error('Pagination container not found');
+        return;
+    }
+
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
