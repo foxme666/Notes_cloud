@@ -13,12 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveNoteBtn = document.getElementById('saveNote');
     const cancelEditBtn = document.getElementById('cancelEdit');
     notesList = document.getElementById('notesList');
-    const noteTitleInput = document.getElementById('noteTitle');
-    const noteContentInput = document.getElementById('noteContent');
-
-    paginationContainer = document.createElement('div');
-    paginationContainer.id = 'pagination';
-    document.querySelector('.container').appendChild(paginationContainer);
 
     newNoteBtn.addEventListener('click', () => showNoteEditor());
     saveNoteBtn.addEventListener('click', saveNote);
@@ -26,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 确保编辑框初始状态为隐藏
     if (noteEditorOverlay) {
-        noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
+        noteEditorOverlay.style.display = 'none';
     }
 
     loadNotes();
@@ -37,16 +31,22 @@ function showNoteEditor(note = null) {
         document.getElementById('noteTitle').value = note ? note.title : '';
         document.getElementById('noteContent').value = note ? note.content : '';
         editingNoteId = note ? note.id : null;
-        noteEditorOverlay.style.display = 'flex'; // 确保显示编辑框
+        noteEditorOverlay.style.display = 'flex';
+        noteEditorOverlay.style.opacity = '1';
+        noteEditorOverlay.style.visibility = 'visible';
+    } else {
+        console.error('Note editor overlay not found');
     }
 }
 
 function hideNoteEditor() {
     if (noteEditorOverlay) {
-        noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
+        noteEditorOverlay.style.display = 'none';
+        noteEditorOverlay.style.opacity = '0';
+        noteEditorOverlay.style.visibility = 'hidden';
         setTimeout(() => {
             editingNoteId = null;
-        }, 300); // 等待动画完成
+        }, 300);
     }
 }
 
