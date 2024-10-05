@@ -5,6 +5,7 @@ const pageSize = 10;
 let paginationContainer;
 let notesList;
 let noteEditorOverlay;
+let notesListEventListener;
 
 document.addEventListener('DOMContentLoaded', () => {
     noteEditorOverlay = document.getElementById('noteEditorOverlay');
@@ -101,7 +102,13 @@ function renderNotes() {
         </div>
     `).join('');
 
-    notesList.addEventListener('click', (e) => {
+    // 移除旧的事件监听器
+    if (notesListEventListener) {
+        notesList.removeEventListener('click', notesListEventListener);
+    }
+
+    // 添加新的事件监听器
+    notesListEventListener = (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const noteId = parseInt(e.target.getAttribute('data-id'));
             const noteToEdit = notes.find(note => note.id === noteId);
@@ -110,7 +117,8 @@ function renderNotes() {
             const noteId = parseInt(e.target.getAttribute('data-id'));
             deleteNote(noteId);
         }
-    });
+    };
+    notesList.addEventListener('click', notesListEventListener);
 }
 
 async function deleteNote(id) {
@@ -220,30 +228,27 @@ async function loadNotes(page = 1) {
             console.log('Received data:', data);
             notes = data.notes;
             
-            // 使用 setTimeout 来确保淡出动画完成后再更新内容
+            renderNotes();
+            renderPagination(data.totalPages, page);
+            
+            // 添加淡入效果
+            if (notesList) {
+                notesList.classList.remove('fade-out');
+                notesList.classList.add('fade-in');
+            }
+            if (paginationContainer) {
+                paginationContainer.classList.remove('fade-out');
+                paginationContainer.classList.add('fade-in');
+            }
+            
+            // 移除 fade-in 类，为下一次动画做准备
             setTimeout(() => {
-                renderNotes();
-                renderPagination(data.totalPages, page);
-                
-                // 添加淡入效果
                 if (notesList) {
-                    notesList.classList.remove('fade-out');
-                    notesList.classList.add('fade-in');
+                    notesList.classList.remove('fade-in');
                 }
                 if (paginationContainer) {
-                    paginationContainer.classList.remove('fade-out');
-                    paginationContainer.classList.add('fade-in');
+                    paginationContainer.classList.remove('fade-in');
                 }
-                
-                // 移除 fade-in 类，为下一次动画做准备
-                setTimeout(() => {
-                    if (notesList) {
-                        notesList.classList.remove('fade-in');
-                    }
-                    if (paginationContainer) {
-                        paginationContainer.classList.remove('fade-in');
-                    }
-                }, 300);
             }, 300);
         } else {
             const errorText = await response.text();
@@ -263,5 +268,3 @@ async function loadNotes(page = 1) {
         }
     }
 }
-
-loadNotes();
