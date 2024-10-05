@@ -1,5 +1,7 @@
 let notes = [];
 let editingNoteId = null;
+let currentPage = 1;
+const pageSize = 20;
 
 document.addEventListener('DOMContentLoaded', () => {
     const newNoteBtn = document.getElementById('newNote');
@@ -9,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteEditor = document.getElementById('noteEditor');
     const noteTitleInput = document.getElementById('noteTitle');
     const noteContentInput = document.getElementById('noteContent');
+    const paginationContainer = document.createElement('div');
+    paginationContainer.id = 'pagination';
+    document.querySelector('.container').appendChild(paginationContainer);
 
     newNoteBtn.addEventListener('click', () => {
         showNoteEditor();
@@ -22,26 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
         hideNoteEditor();
     });
 
-    async function loadNotes() {
+    async function loadNotes(page = 1) {
         try {
-            const response = await fetch('/api/notes');
+            const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
             if (response.ok) {
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.indexOf("application/json") !== -1) {
-                    notes = await response.json();
-                    renderNotes();
-                } else {
-                    console.error('Received non-JSON response:', await response.text());
-                    throw new Error('Received non-JSON response from server');
-                }
+                const data = await response.json();
+                notes = data.notes;
+                renderNotes();
+                renderPagination(data.totalPages, page);
             } else {
-                console.error('Server responded with status:', response.status);
                 throw new Error('Failed to load notes: ' + response.statusText);
             }
         } catch (error) {
             console.error('Failed to load notes:', error);
-            // 可以在这里添加用户友好的错误提示
-            alert('加载笔记失败，请稍后再试。');
+            showNotification('加载笔记失败，请稍后再试。', 'error');
         }
     }
 
@@ -63,32 +62,35 @@ document.addEventListener('DOMContentLoaded', () => {
         editingNoteId = null;
     }
 
-    function saveNote() {
+    async function saveNote() {
         const title = noteTitleInput.value.trim();
         const content = noteContentInput.value.trim();
         if (title && content) {
-            if (editingNoteId) {
-                const index = notes.findIndex(note => note.id === editingNoteId);
-                if (index !== -1) {
-                    notes[index] = {
-                        ...notes[index],
-                        title,
-                        content,
-                        date: new Date().toLocaleString('zh-CN')
-                    };
-                }
-            } else {
+            try {
                 const note = {
-                    id: Date.now(),
+                    id: editingNoteId || Date.now(),
                     title,
                     content,
                     date: new Date().toLocaleString('zh-CN')
                 };
-                notes.push(note);
+                const response = await fetch('/api/notes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(note),
+                });
+                if (response.ok) {
+                    showNotification(editingNoteId ? '笔记更新成功' : '笔记保存成功', 'success');
+                    hideNoteEditor();
+                    loadNotes(currentPage);
+                } else {
+                    throw new Error('Failed to save note');
+                }
+            } catch (error) {
+                console.error('Failed to save note:', error);
+                showNotification('保存笔记失败，请稍后再试。', 'error');
             }
-            saveNotes();
-            renderNotes();
-            hideNoteEditor();
         }
     }
 
@@ -128,27 +130,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function deleteNote(id) {
-        notes = notes.filter(note => note.id !== id);
-        saveNotes();
-        renderNotes();
-    }
-
-    async function saveNotes() {
+    async function deleteNote(id) {
         try {
-            const response = await fetch('/api/notes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(notes),
-            });
-            if (!response.ok) {
-                throw new Error('Failed to save notes');
+            const response = await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                showNotification('笔记删除成功', 'success');
+                loadNotes(currentPage);
+            } else {
+                throw new Error('Failed to delete note');
             }
         } catch (error) {
-            console.error('Failed to save notes:', error);
+            console.error('Failed to delete note:', error);
+            showNotification('删除笔记失败，请稍后再试。', 'error');
         }
+    }
+
+    function renderPagination(totalPages, currentPage) {
+        paginationContainer.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.classList.add('page-btn');
+            if (i === currentPage) {
+                pageBtn.classList.add('active');
+            }
+            pageBtn.addEventListener('click', () => loadNotes(i));
+            paginationContainer.appendChild(pageBtn);
+        }
+    }
+
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.classList.add('notification', type);
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }, 100);
     }
 
     loadNotes();

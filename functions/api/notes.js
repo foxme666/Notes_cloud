@@ -6,8 +6,22 @@ export async function onRequest(context) {
   if (path === '/api/notes') {
     if (request.method === 'GET') {
       try {
-        const notes = await env.NOTES_KV.get('notes');
-        return new Response(notes || '[]', { 
+        const page = parseInt(url.searchParams.get('page')) || 1;
+        const pageSize = parseInt(url.searchParams.get('pageSize')) || 20;
+        const notesString = await env.NOTES_KV.get('notes');
+        const allNotes = JSON.parse(notesString || '[]');
+        
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedNotes = allNotes.slice(startIndex, endIndex);
+        
+        const totalPages = Math.ceil(allNotes.length / pageSize);
+
+        return new Response(JSON.stringify({
+          notes: paginatedNotes,
+          totalPages: totalPages,
+          currentPage: page
+        }), { 
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
@@ -25,26 +39,69 @@ export async function onRequest(context) {
       }
     } else if (request.method === 'POST') {
       try {
-        const notes = await request.json();
+        const newNote = await request.json();
+        const notesString = await env.NOTES_KV.get('notes');
+        const notes = JSON.parse(notesString || '[]');
+        
+        const existingIndex = notes.findIndex(note => note.id === newNote.id);
+        if (existingIndex !== -1) {
+          notes[existingIndex] = newNote;
+        } else {
+          notes.push(newNote);
+        }
+        
         await env.NOTES_KV.put('notes', JSON.stringify(notes));
-        return new Response('OK', { 
+        return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
           status: 200,
-          headers: { 'Access-Control-Allow-Origin': '*' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*' 
+          }
         });
       } catch (error) {
-        console.error('Error saving notes:', error);
-        return new Response('Internal Server Error', { status: 500 });
+        console.error('Error saving note:', error);
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
       }
     } else if (request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type'
         }
       });
-    } else {
-      return new Response('Method Not Allowed', { status: 405 });
+    }
+  } else if (path.startsWith('/api/notes/')) {
+    if (request.method === 'DELETE') {
+      try {
+        const noteId = parseInt(path.split('/').pop());
+        const notesString = await env.NOTES_KV.get('notes');
+        let notes = JSON.parse(notesString || '[]');
+        notes = notes.filter(note => note.id !== noteId);
+        await env.NOTES_KV.put('notes', JSON.stringify(notes));
+        return new Response(JSON.stringify({ message: 'Note deleted successfully' }), { 
+          status: 200,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*' 
+          }
+        });
+      } catch (error) {
+        console.error('Error deleting note:', error);
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
     }
   }
 
