@@ -1,34 +1,23 @@
-const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-
 let notes = [];
 let editingNoteId = null;
 let currentPage = 1;
-const pageSize = 10; // 更新为10
+const pageSize = 10;
 
 document.addEventListener('DOMContentLoaded', () => {
-    noteEditorOverlay = document.getElementById('noteEditorOverlay');
+    const noteEditorOverlay = document.getElementById('noteEditorOverlay');
     const newNoteBtn = document.getElementById('newNote');
     const saveNoteBtn = document.getElementById('saveNote');
     const cancelEditBtn = document.getElementById('cancelEdit');
     const notesList = document.getElementById('notesList');
-    const noteEditor = document.getElementById('noteEditor');
     const noteTitleInput = document.getElementById('noteTitle');
     const noteContentInput = document.getElementById('noteContent');
     const paginationContainer = document.createElement('div');
     paginationContainer.id = 'pagination';
     document.querySelector('.container').appendChild(paginationContainer);
 
-    newNoteBtn.addEventListener('click', () => {
-        showNoteEditor();
-    });
-
-    saveNoteBtn.addEventListener('click', () => {
-        saveNote();
-    });
-
-    cancelEditBtn.addEventListener('click', () => {
-        hideNoteEditor();
-    });
+    newNoteBtn.addEventListener('click', () => showNoteEditor());
+    saveNoteBtn.addEventListener('click', saveNote);
+    cancelEditBtn.addEventListener('click', hideNoteEditor);
 
     async function loadNotes(page = 1) {
         try {
@@ -48,32 +37,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNoteEditor(note = null) {
-        noteEditorOverlay.classList.remove('hidden');
-        if (note) {
-            noteTitleInput.value = note.title;
-            noteContentInput.value = note.content;
-            editingNoteId = note.id;
-        } else {
-            noteTitleInput.value = '';
-            noteContentInput.value = '';
-            editingNoteId = null;
-        }
+        noteEditorOverlay.style.display = 'flex';
+        noteTitleInput.value = note ? note.title : '';
+        noteContentInput.value = note ? note.content : '';
+        editingNoteId = note ? note.id : null;
     }
 
     function hideNoteEditor() {
-        noteEditorOverlay.classList.add('hidden');
+        noteEditorOverlay.style.display = 'none';
         editingNoteId = null;
     }
 
     async function saveNote() {
         const title = noteTitleInput.value.trim();
         const content = noteContentInput.value.trim();
-        if (!title) {
-            showNotification('标题不能为空', 'error');
-            return;
-        }
-        if (!content) {
-            showNotification('内容不能为空', 'error');
+        if (!title || !content) {
+            showNotification(title ? '内容不能为空' : '标题不能为空', 'error');
             return;
         }
         try {
@@ -85,9 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const response = await fetch('/api/notes', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(note),
             });
             if (response.ok) {
@@ -95,8 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideNoteEditor();
                 loadNotes(currentPage);
             } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to save note');
+                throw new Error('Failed to save note');
             }
         } catch (error) {
             console.error('Failed to save note:', error);
@@ -105,11 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderNotes() {
-        notesList.innerHTML = '';
-        notes.forEach(note => {
-            const noteCard = document.createElement('div');
-            noteCard.classList.add('note-card');
-            noteCard.innerHTML = `
+        notesList.innerHTML = notes.map(note => `
+            <div class="note-card">
                 <div class="note-info">
                     <div class="note-title">${note.title}</div>
                     <div class="note-date">${note.date}</div>
@@ -118,25 +91,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="edit-btn" data-id="${note.id}">编辑</button>
                     <button class="delete-btn" data-id="${note.id}">删除</button>
                 </div>
-            `;
-            notesList.appendChild(noteCard);
-        });
+            </div>
+        `).join('');
 
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+        notesList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('edit-btn')) {
                 const noteId = parseInt(e.target.getAttribute('data-id'));
                 const noteToEdit = notes.find(note => note.id === noteId);
-                if (noteToEdit) {
-                    showNoteEditor(noteToEdit);
-                }
-            });
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+                if (noteToEdit) showNoteEditor(noteToEdit);
+            } else if (e.target.classList.contains('delete-btn')) {
                 const noteId = parseInt(e.target.getAttribute('data-id'));
                 deleteNote(noteId);
-            });
+            }
         });
     }
 
@@ -144,9 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/notes/${id}`, { 
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
             if (response.ok) {
                 showNotification('笔记删除成功', 'success');
@@ -161,33 +125,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPagination(totalPages, currentPage) {
-        paginationContainer.innerHTML = '';
-        for (let i = 1; i <= totalPages; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.textContent = i;
-            pageBtn.classList.add('page-btn');
-            if (i === currentPage) {
-                pageBtn.classList.add('active');
+        paginationContainer.innerHTML = Array.from({length: totalPages}, (_, i) => i + 1)
+            .map(i => `<button class="page-btn ${i === currentPage ? 'active' : ''}">${i}</button>`)
+            .join('');
+        paginationContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('page-btn')) {
+                loadNotes(parseInt(e.target.textContent));
             }
-            pageBtn.addEventListener('click', () => loadNotes(i));
-            paginationContainer.appendChild(pageBtn);
-        }
+        });
     }
 
     function showNotification(message, type) {
         const notification = document.createElement('div');
         notification.textContent = message;
-        notification.classList.add('notification', type);
+        notification.className = `notification ${type}`;
         document.body.appendChild(notification);
+        setTimeout(() => notification.classList.add('show'), 100);
         setTimeout(() => {
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
-            }, 3000);
-        }, 100);
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 
     loadNotes();
