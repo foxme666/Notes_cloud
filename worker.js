@@ -20,6 +20,8 @@ async function handleRequest(request) {
       const notes = await request.json()
       await NOTES_KV.put('notes', JSON.stringify(notes))
       return new Response('OK', { status: 200 })
+    } else {
+      return new Response('Method Not Allowed', { status: 405 })
     }
   } else {
     return new Response('Not Found', { status: 404 })
