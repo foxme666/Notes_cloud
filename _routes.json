@@ -1,5 +1,11 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": ["/api/*"]
+  "exclude": [],
+  "routes": [
+    {
+      "src": "/api/.*",
+      "dest": "/api"
+    }
+  ]
 }

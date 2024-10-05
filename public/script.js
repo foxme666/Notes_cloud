@@ -26,11 +26,22 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/notes');
             if (response.ok) {
-                notes = await response.json();
-                renderNotes();
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    notes = await response.json();
+                    renderNotes();
+                } else {
+                    console.error('Received non-JSON response:', await response.text());
+                    throw new Error('Received non-JSON response from server');
+                }
+            } else {
+                console.error('Server responded with status:', response.status);
+                throw new Error('Failed to load notes: ' + response.statusText);
             }
         } catch (error) {
             console.error('Failed to load notes:', error);
+            // 可以在这里添加用户友好的错误提示
+            alert('加载笔记失败，请稍后再试。');
         }
     }
 

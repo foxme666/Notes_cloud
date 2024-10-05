@@ -15,7 +15,13 @@ export async function onRequest(context) {
         });
       } catch (error) {
         console.error('Error getting notes:', error);
-        return new Response('Internal Server Error', { status: 500 });
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+          status: 500,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
       }
     } else if (request.method === 'POST') {
       try {
@@ -42,5 +48,11 @@ export async function onRequest(context) {
     }
   }
 
-  return new Response('Not Found', { status: 404 });
+  return new Response(JSON.stringify({ error: 'Not Found' }), { 
+    status: 404,
+    headers: { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    }
+  });
 }
