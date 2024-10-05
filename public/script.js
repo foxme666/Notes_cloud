@@ -42,20 +42,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNoteEditor(note = null) {
+        const noteEditorOverlay = document.getElementById('noteEditorOverlay');
+        const noteTitleInput = document.getElementById('noteTitle');
+        const noteContentInput = document.getElementById('noteContent');
+
+        noteTitleInput.value = note ? note.title : '';
+        noteContentInput.value = note ? note.content : '';
+        editingNoteId = note ? note.id : null;
+
         noteEditorOverlay.style.display = 'flex';
         setTimeout(() => {
             noteEditorOverlay.classList.add('show');
         }, 10);
-        noteTitleInput.value = note ? note.title : '';
-        noteContentInput.value = note ? note.content : '';
-        editingNoteId = note ? note.id : null;
     }
 
     function hideNoteEditor() {
+        const noteEditorOverlay = document.getElementById('noteEditorOverlay');
         noteEditorOverlay.classList.remove('show');
         setTimeout(() => {
             noteEditorOverlay.style.display = 'none';
-        }, 300); // 等待动画完成
+        }, 300);
         editingNoteId = null;
     }
 
