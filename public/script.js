@@ -108,16 +108,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function deleteNote(id) {
         try {
+            console.log(`Attempting to delete note with id: ${id}`);
             const response = await fetch(`/api/notes/${id}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
+            console.log('Delete response:', response);
             if (response.ok) {
                 showNotification('笔记删除成功', 'success');
                 loadNotes(currentPage);
             } else {
-                console.log(response);
-                throw new Error('Failed to delete note');
+                const errorData = await response.json();
+                console.error('Delete error:', errorData);
+                throw new Error(errorData.error || 'Failed to delete note');
             }
         } catch (error) {
             console.error('Failed to delete note:', error);
