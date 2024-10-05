@@ -50,18 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
         noteContentInput.value = note ? note.content : '';
         editingNoteId = note ? note.id : null;
 
-        noteEditorOverlay.style.display = 'flex';
-        setTimeout(() => {
-            noteEditorOverlay.classList.add('show');
-        }, 10);
+        noteEditorOverlay.classList.remove('hidden');
     }
 
     function hideNoteEditor() {
         const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-        noteEditorOverlay.classList.remove('show');
-        setTimeout(() => {
-            noteEditorOverlay.style.display = 'none';
-        }, 300);
+        noteEditorOverlay.classList.add('hidden');
         editingNoteId = null;
     }
 

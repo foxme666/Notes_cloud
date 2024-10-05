@@ -3,7 +3,6 @@ body {
     margin: 0;
     padding: 0;
     background-color: #f2f2f7;
-    font-size: 16px; /* 基础字体大小 */
 }
 
 .container {
@@ -19,11 +18,16 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 10px;
 }
 
 h1 {
     font-size: 24px;
-    margin: 0;
+    font-weight: 600;
+    color: #000;
 }
 
 button {
@@ -31,15 +35,27 @@ button {
     color: #fff;
     border: none;
     padding: 10px 15px;
-    border-radius: 5px;
+    border-radius: 10px;
+    font-size: 16px;
     cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#notesList {
+    display: grid;
+    gap: 15px;
 }
 
 .note-card {
-    background-color: #fff;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
     border-radius: 10px;
     padding: 15px;
-    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -51,31 +67,64 @@ button {
 
 .note-title {
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 600;
+    margin-bottom: 5px;
 }
 
 .note-date {
     font-size: 14px;
-    color: #666;
+    color: #8e8e93;
 }
 
-.note-actions {
+#noteEditorOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+#noteEditorOverlay.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 #noteEditor {
-    background-color: #fff;
-    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     border-radius: 10px;
+    padding: 20px;
     width: 90%;
     max-width: 600px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#noteEditorOverlay:not(.hidden) #noteEditor {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 #noteTitle, #noteContent {
     width: 100%;
+    border: none;
+    background-color: transparent;
     margin-bottom: 15px;
+    font-size: 16px;
+}
+
+#noteTitle {
+    font-size: 20px;
+    font-weight: 600;
 }
 
 #noteContent {
@@ -84,97 +133,54 @@ button {
 }
 
 .button-group {
-    flex-direction: column;
+    display: flex;
+    justify-content: space-between;
 }
 
-.button-group button {
-    width: 100%;
-    margin-bottom: 10px;
+.secondary {
+    background-color: #8e8e93;
 }
 
-#pagination {
-    flex-wrap: wrap;
+.secondary:hover {
+    background-color: #636366;
 }
 
-.page-btn {
-    margin: 5px;
+.note-actions button {
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.delete-btn {
+    background-color: #ff3b30;
+}
+
+.delete-btn:hover {
+    background-color: #d70015;
 }
 
 .notification {
-    width: 90%;
-    left: 5%;
-    right: 5%;
-    top: 10px;
-    text-align: center;
-}
-
-/* 媒体查询，针对更大屏幕的设备 */
-@media (min-width: 768px) {
-    header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    h1 {
-        margin-bottom: 0;
-    }
-
-    .note-card {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .note-info {
-        width: auto;
-        margin-bottom: 0;
-    }
-
-    .note-actions {
-        width: auto;
-    }
-
-    .button-group {
-        flex-direction: row;
-    }
-
-    .button-group button {
-        width: auto;
-        margin-bottom: 0;
-        margin-left: 10px;
-    }
-
-    .notification {
-        width: auto;
-        left: auto;
-        right: 20px;
-    }
-}
-
-/* 确保编辑器在移动设备上也能正常工作 */
-#noteEditorOverlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: white;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease-in-out;
 }
 
-#noteEditorOverlay.show {
-    display: flex;
+.notification.show {
     opacity: 1;
 }
 
-/* 移除之前的 transform 相关样式 */
+.notification.success {
+    background-color: #4CAF50;
+}
 
-/* 移动端适配 */
+.notification.error {
+    background-color: #f44336;
+}
+
 @media (max-width: 767px) {
     header {
         flex-direction: column;
@@ -201,13 +207,5 @@ button {
 
     #noteContent {
         height: 150px;
-    }
-
-    #noteEditorOverlay {
-        align-items: flex-end;
-    }
-
-    #noteEditor {
-        border-radius: 10px 10px 0 0;
     }
 }
