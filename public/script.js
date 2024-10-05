@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 确保编辑框初始状态为隐藏
     if (noteEditorOverlay) {
-        noteEditorOverlay.classList.add('hidden');
+        noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
     }
 
     if (notesList) {
@@ -41,12 +41,12 @@ function showNoteEditor(note = null) {
     document.getElementById('noteTitle').value = note ? note.title : '';
     document.getElementById('noteContent').value = note ? note.content : '';
     editingNoteId = note ? note.id : null;
-    noteEditorOverlay.classList.add('show');
+    noteEditorOverlay.style.display = 'flex'; // 使用 display 控制显示
 }
 
 function hideNoteEditor() {
     const noteEditorOverlay = document.getElementById('noteEditorOverlay');
-    noteEditorOverlay.classList.remove('show');
+    noteEditorOverlay.style.display = 'none'; // 使用 display 控制隐藏
     setTimeout(() => {
         editingNoteId = null;
     }, 300); // 等待动画完成
@@ -121,7 +121,7 @@ async function deleteNote(id) {
     try {
         console.log(`Attempting to delete note with id: ${id}`);
         const response = await fetch('/api/notes', {
-            method: 'POST',
+            method: 'POST', // 继续使用 POST 方法
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'delete', id: id })
         });
