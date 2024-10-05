@@ -48,6 +48,7 @@ button:hover {
 #notesList {
     display: grid;
     gap: 15px;
+    transition: opacity 0.3s ease;
 }
 
 .note-card {
@@ -87,13 +88,14 @@ button:hover {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    opacity: 1;
-    transition: opacity 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-#noteEditorOverlay.hidden {
-    opacity: 0;
-    pointer-events: none;
+#noteEditorOverlay.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 #noteEditor {
@@ -109,7 +111,7 @@ button:hover {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-#noteEditorOverlay:not(.hidden) #noteEditor {
+#noteEditorOverlay.show #noteEditor {
     opacity: 1;
     transform: translateY(0);
 }
@@ -223,19 +225,25 @@ button:hover {
 .page-btn {
     margin: 0 5px;
     padding: 5px 10px;
-    background-color: #f0f0f0;
+    background-color: #007aff;
+    color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.page-btn:hover {
+    background-color: #0056b3;
 }
 
 .page-btn.active {
-    background-color: #007aff;
-    color: white;
+    background-color: #0056b3;
 }
 
 .page-ellipsis {
     margin: 0 5px;
+    color: #333;
 }
 
 #noteEditorOverlay {
@@ -244,4 +252,16 @@ button:hover {
 
 #noteEditorOverlay.show {
     display: flex;
+}
+
+.fade-out {
+    opacity: 0;
+}
+
+.fade-in {
+    opacity: 1;
+}
+
+#pagination {
+    transition: opacity 0.3s ease;
 }

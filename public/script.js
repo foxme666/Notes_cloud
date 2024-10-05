@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 确保编辑框初始状态为隐藏
     noteEditorOverlay.classList.add('hidden');
 
+    notesList.style.opacity = '0';  // 初始化为透明
+
     loadNotes();
 });
 
@@ -36,15 +38,15 @@ function showNoteEditor(note = null) {
     noteContentInput.value = note ? note.content : '';
     editingNoteId = note ? note.id : null;
 
-    noteEditorOverlay.classList.remove('hidden');
     noteEditorOverlay.classList.add('show');
 }
 
 function hideNoteEditor() {
     const noteEditorOverlay = document.getElementById('noteEditorOverlay');
     noteEditorOverlay.classList.remove('show');
-    noteEditorOverlay.classList.add('hidden');
-    editingNoteId = null;
+    setTimeout(() => {
+        editingNoteId = null;
+    }, 300); // 等待动画完成
 }
 
 async function saveNote() {
@@ -196,14 +198,35 @@ function showNotification(message, type) {
 async function loadNotes(page = 1) {
     try {
         console.log(`Loading notes for page ${page}`);
+        
+        // 添加淡出效果
+        notesList.classList.add('fade-out');
+        paginationContainer.classList.add('fade-out');
+        
         const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
         console.log('Response status:', response.status);
         if (response.ok) {
             const data = await response.json();
             console.log('Received data:', data);
             notes = data.notes;
-            renderNotes();
-            renderPagination(data.totalPages, page);
+            
+            // 使用 setTimeout 来确保淡出动画完成后再更新内容
+            setTimeout(() => {
+                renderNotes();
+                renderPagination(data.totalPages, page);
+                
+                // 添加淡入效果
+                notesList.classList.remove('fade-out');
+                notesList.classList.add('fade-in');
+                paginationContainer.classList.remove('fade-out');
+                paginationContainer.classList.add('fade-in');
+                
+                // 移除 fade-in 类，为下一次动画做准备
+                setTimeout(() => {
+                    notesList.classList.remove('fade-in');
+                    paginationContainer.classList.remove('fade-in');
+                }, 300);
+            }, 300);
         } else {
             const errorText = await response.text();
             console.error('Error response:', errorText);
@@ -212,6 +235,10 @@ async function loadNotes(page = 1) {
     } catch (error) {
         console.error('Failed to load notes:', error);
         showNotification('加载笔记失败，请稍后再试。', 'error');
+        
+        // 出错时也需要移除 fade-out 类
+        notesList.classList.remove('fade-out');
+        paginationContainer.classList.remove('fade-out');
     }
 }
 
