@@ -43,13 +43,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showNoteEditor(note = null) {
         noteEditorOverlay.style.display = 'flex';
+        setTimeout(() => {
+            noteEditorOverlay.classList.add('show');
+        }, 10);
         noteTitleInput.value = note ? note.title : '';
         noteContentInput.value = note ? note.content : '';
         editingNoteId = note ? note.id : null;
     }
 
     function hideNoteEditor() {
-        noteEditorOverlay.style.display = 'none';
+        noteEditorOverlay.classList.remove('show');
+        setTimeout(() => {
+            noteEditorOverlay.style.display = 'none';
+        }, 300); // 等待动画完成
         editingNoteId = null;
     }
 

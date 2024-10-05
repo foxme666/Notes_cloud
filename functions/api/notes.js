@@ -44,10 +44,26 @@ async function handleGetNotes(env, url) {
     const pageSize = parseInt(url.searchParams.get('pageSize')) || 10;
     console.log(`Page: ${page}, PageSize: ${pageSize}`);
 
-    const notesIndexString = await env.NOTES_KV.get('notesIndex');
+    let notesIndexString = await env.NOTES_KV.get('notesIndex');
     console.log('Notes index string:', notesIndexString);
-    const notesIndex = JSON.parse(notesIndexString || '[]');
+    let notesIndex = JSON.parse(notesIndexString || '[]');
     console.log('Parsed notes index:', notesIndex);
+    
+    // 同步 notesIndex 和实际笔记
+    let syncedNotesIndex = [];
+    for (const id of notesIndex) {
+      const noteString = await env.NOTES_KV.get(`note:${id}`);
+      if (noteString) {
+        syncedNotesIndex.push(id);
+      }
+    }
+
+    // 如果 notesIndex 发生了变化，更新它
+    if (syncedNotesIndex.length !== notesIndex.length) {
+      notesIndex = syncedNotesIndex;
+      await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
+      console.log('Updated notes index:', notesIndex);
+    }
     
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -61,7 +77,7 @@ async function handleGetNotes(env, url) {
     }));
     console.log('Paginated notes:', paginatedNotes);
 
-    // 过滤掉 null 笔记
+    // 过滤掉 null 笔记（这一步现在应该是多余的，但为了安全起见保留）
     const validNotes = paginatedNotes.filter(note => note !== null);
 
     const totalPages = Math.ceil(notesIndex.length / pageSize);
@@ -91,18 +107,16 @@ async function handlePostNote(request, env) {
     const noteId = newNote.id || Date.now().toString();
     newNote.id = noteId;
 
-    // 使用事务来确保原子性
-    await env.NOTES_KV.transaction(async (txn) => {
-      // 保存笔记
-      await txn.put(`note:${noteId}`, JSON.stringify(newNote));
+    // 保存笔记
+    await env.NOTES_KV.put(`note:${noteId}`, JSON.stringify(newNote));
 
-      // 更新索引
-      let notesIndex = JSON.parse(await txn.get('notesIndex') || '[]');
-      if (!notesIndex.includes(noteId)) {
-        notesIndex.push(noteId);
-        await txn.put('notesIndex', JSON.stringify(notesIndex));
-      }
-    });
+    // 更新索引
+    let notesIndexString = await env.NOTES_KV.get('notesIndex');
+    let notesIndex = JSON.parse(notesIndexString || '[]');
+    if (!notesIndex.includes(noteId)) {
+      notesIndex.push(noteId);
+      await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
+    }
 
     return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
       status: 200,
@@ -119,16 +133,35 @@ async function handlePostNote(request, env) {
 
 async function handleDeleteNoteById(noteId, env) {
   try {
-    // 使用事务来确保原子性
-    await env.NOTES_KV.transaction(async (txn) => {
-      // 删除笔记
-      await txn.delete(`note:${noteId}`);
+    // 首先检查笔记是否存在
+    const noteString = await env.NOTES_KV.get(`note:${noteId}`);
+    if (!noteString) {
+      return new Response(JSON.stringify({ error: 'Note not found' }), { 
+        status: 404,
+        headers: getResponseHeaders()
+      });
+    }
 
-      // 更新索引
-      let notesIndex = JSON.parse(await txn.get('notesIndex') || '[]');
-      notesIndex = notesIndex.filter(id => id !== noteId);
-      await txn.put('notesIndex', JSON.stringify(notesIndex));
-    });
+    // 删除笔记
+    await env.NOTES_KV.delete(`note:${noteId}`);
+
+    // 获取并更新索引
+    let notesIndexString = await env.NOTES_KV.get('notesIndex');
+    let notesIndex = JSON.parse(notesIndexString || '[]');
+    
+    // 同步 notesIndex 和实际笔记
+    let syncedNotesIndex = [];
+    for (const id of notesIndex) {
+      if (id !== noteId) {  // 排除正在删除的笔记ID
+        const noteString = await env.NOTES_KV.get(`note:${id}`);
+        if (noteString) {
+          syncedNotesIndex.push(id);
+        }
+      }
+    }
+
+    // 更新索引
+    await env.NOTES_KV.put('notesIndex', JSON.stringify(syncedNotesIndex));
 
     return new Response(JSON.stringify({ message: 'Note deleted successfully' }), { 
       status: 200,
