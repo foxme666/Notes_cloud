@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteTitleInput = document.getElementById('noteTitle');
     const noteContentInput = document.getElementById('noteContent');
 
-    // 从API加载笔记
     async function loadNotes() {
         try {
             const response = await fetch('/api/notes');
@@ -23,38 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ... 其他函数保持不变 ...
-
-    function saveNote() {
-        const title = noteTitleInput.value.trim();
-        const content = noteContentInput.value.trim();
-        if (title && content) {
-            if (editingNoteId) {
-                // 编辑现有笔记
-                const index = notes.findIndex(note => note.id === editingNoteId);
-                if (index !== -1) {
-                    notes[index] = {
-                        ...notes[index],
-                        title,
-                        content,
-                        date: new Date().toLocaleString('zh-CN')
-                    };
-                }
-            } else {
-                // 创建新笔记
-                const note = {
-                    id: Date.now(),
-                    title,
-                    content,
-                    date: new Date().toLocaleString('zh-CN')
-                };
-                notes.push(note);
-            }
-            saveNotes();
-            renderNotes();
-            hideNoteEditor();
-        }
-    }
+    // 其他函数保持不变
 
     async function saveNotes() {
         try {
