@@ -139,6 +139,7 @@ async function saveNote() {
             id: editingNoteId || Date.now(),
             title,
             content,
+            timestamp: Date.now(), // For sorting
             date: new Date().toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
@@ -233,24 +234,42 @@ function renderNotes() {
 }
 
 function groupNotesByDate(notesList) {
-    const groups = {};
+    const groups = {}; // JS Object keys 按插入顺序
+
+    // 统一时间参考
     const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
+    // 设为当天 0点，用于比较日期
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const currentYear = now.getFullYear();
 
     notesList.forEach(note => {
-        const noteDate = new Date(note.date);
-        let groupKey;
-
-        if (isSameDay(noteDate, now)) {
-            groupKey = '今天';
-        } else if (isSameDay(noteDate, yesterday)) {
-            groupKey = '昨天';
-        } else if (isSameWeek(noteDate, now)) {
-            groupKey = '本周';
+        // 优先使用 timestamp，没有则尝试解析 date
+        let d;
+        if (note.timestamp) {
+            d = new Date(note.timestamp);
         } else {
-            // 格式化为 "2024年11月"
-            groupKey = noteDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
+            // 兼容旧数据 date 字符串
+            d = new Date(note.date.replace(/-/g, '/'));
+            if (isNaN(d.getTime())) d = new Date(note.id); // final fallback
+        }
+
+        let groupKey;
+        const noteTime = d.getTime();
+
+        // 比较
+        if (noteTime >= todayStart.getTime()) {
+            groupKey = '今天';
+        } else if (noteTime >= yesterdayStart.getTime()) {
+            groupKey = '昨天';
+        } else if (d.getFullYear() === currentYear) {
+            // 当年：按月分组 (e.g. "11月")
+            groupKey = (d.getMonth() + 1) + '月';
+        } else {
+            // 往年：按年分组 (e.g. "2023年")
+            groupKey = d.getFullYear() + '年';
         }
 
         if (!groups[groupKey]) {
@@ -258,11 +277,6 @@ function groupNotesByDate(notesList) {
         }
         groups[groupKey].push(note);
     });
-
-    // 排序 groupKey (这里是一个简单的实现，如果需要严格按时间排序 keys 可能需要调整)
-    // 目前 Object.entries 的顺序在现代浏览器中通常是插入顺序
-    // 如果需要严格排序，可以将 key 设计为 "YYYYMM" 等前缀
-
     return groups;
 }
 
@@ -331,6 +345,7 @@ async function executeDelete(id) {
 }
 
 // 渲染逻辑
+// 渲染逻辑
 async function loadNotes(page = 1) {
     if (noteStats.isLoading) return;
 
@@ -362,10 +377,18 @@ async function loadNotes(page = 1) {
 
             noteStats.currentPage = page;
             noteStats.allNotes = [...noteStats.allNotes, ...newNotes];
+
+            // 强制前端排序：最新修改（或创建）的在前
+            noteStats.allNotes.sort((a, b) => {
+                const timeA = a.timestamp || a.id;
+                const timeB = b.timestamp || b.id;
+                return Number(timeB) - Number(timeA);
+            });
+
             notes = noteStats.allNotes; // 保持兼容性
 
-            // 更新 Filter Groups
-            updateFilterGroups(newNotes);
+            // 重新从排序后的全集生成 Groups，确保 Chip 顺序正确
+            rebuildFilterGroups();
 
             // 渲染
             renderNotes();
@@ -381,28 +404,35 @@ async function loadNotes(page = 1) {
     }
 }
 
-function updateFilterGroups(newNotes) {
-    const groups = groupNotesByDate(newNotes);
-    let changed = false;
+function rebuildFilterGroups() {
+    // 基于已排序的 noteStats.allNotes 重新构建 Set
+    noteStats.groups.clear();
+    const groups = groupNotesByDate(noteStats.allNotes);
     for (const group of Object.keys(groups)) {
-        if (!noteStats.groups.has(group)) {
-            noteStats.groups.add(group);
-            changed = true;
-        }
+        noteStats.groups.add(group);
     }
-    if (changed) renderFilterBar();
+    renderFilterBar();
+}
+
+function updateFilterGroups(newNotes) {
+    // 转发给重建函数
+    rebuildFilterGroups();
 }
 
 function renderFilterBar() {
     const filterBar = document.getElementById('filterBar');
-    // 保留第一个 "全部" 按钮
     if (!filterBar) return;
 
-    const allBtn = filterBar.querySelector('[data-group="all"]');
+    // 记住当前选中状态
     filterBar.innerHTML = '';
-    if (allBtn) filterBar.appendChild(allBtn);
 
-    // 按插入顺序渲染
+    const allBtn = document.createElement('button');
+    allBtn.className = `filter-chip ${noteStats.activeGroup === 'all' ? 'active' : ''}`;
+    allBtn.setAttribute('data-group', 'all');
+    allBtn.textContent = '全部';
+    filterBar.appendChild(allBtn);
+
+    // 按插入顺序渲染 (因为 allNotes 已经是有序的，所以 keys 自然也是有序的)
     [...noteStats.groups].forEach(group => {
         const btn = document.createElement('button');
         btn.className = `filter-chip ${noteStats.activeGroup === group ? 'active' : ''}`;
@@ -469,33 +499,8 @@ function renderNotes() {
     }
 }
 
-function groupNotesByDate(notesList) {
-    const groups = {};
-    const now = new Date();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
+// function groupNotesByDate removed (duplicate)
 
-    notesList.forEach(note => {
-        const noteDate = new Date(note.date);
-        let groupKey;
-
-        if (isSameDay(noteDate, now)) {
-            groupKey = '今天';
-        } else if (isSameDay(noteDate, yesterday)) {
-            groupKey = '昨天';
-        } else if (isSameWeek(noteDate, now)) {
-            groupKey = '本周';
-        } else {
-            groupKey = noteDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
-        }
-
-        if (!groups[groupKey]) {
-            groups[groupKey] = [];
-        }
-        groups[groupKey].push(note);
-    });
-    return groups;
-}
 
 function isSameDay(d1, d2) {
     return d1.getFullYear() === d2.getFullYear() &&
