@@ -204,41 +204,165 @@ async function executeDelete(id) {
 }
 
 // 渲染逻辑
+async function loadNotes(page = 1) {
+    if (noteStats.isLoading) return;
+
+    if (page === 1) {
+        noteStats.allNotes = [];
+        noteStats.groups.clear();
+        noteStats.hasMore = true;
+        elements.notesList.innerHTML = '';
+        renderFilterBar();
+    }
+
+    noteStats.isLoading = true;
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('noMoreNotes').style.display = 'none';
+
+    try {
+        console.log(`Loading notes page ${page}`);
+        // 修正：确保 API 请求正确
+        const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
+
+        if (response.ok) {
+            const data = await response.json();
+            const newNotes = data.notes;
+
+            if (newNotes.length < pageSize) {
+                noteStats.hasMore = false;
+                document.getElementById('noMoreNotes').style.display = 'block';
+            }
+
+            noteStats.currentPage = page;
+            noteStats.allNotes = [...noteStats.allNotes, ...newNotes];
+
+            // 强制前端排序：优先 Date 字符串，其次 Timestamp，最后 ID
+            noteStats.allNotes.sort((a, b) => {
+                const timeA = getNoteTime(a);
+                const timeB = getNoteTime(b);
+                return timeB - timeA;
+            });
+
+            notes = noteStats.allNotes; // 保持兼容性
+
+            rebuildFilterGroups();
+            renderNotes();
+        } else {
+            throw new Error('Load failed');
+        }
+    } catch (error) {
+        console.error('Failed to load:', error);
+        showNotification('加载失败', 'error');
+    } finally {
+        noteStats.isLoading = false;
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+}
+
+// 统一的时间获取逻辑
+function getNoteTime(note) {
+    if (note.date) {
+        // 兼容 / 和 - 分隔符
+        const d = new Date(note.date.replace(/-/g, '/'));
+        if (!isNaN(d.getTime())) return d.getTime();
+    }
+
+    if (note.timestamp) return note.timestamp;
+    return Number(note.id);
+}
+
+function rebuildFilterGroups() {
+    noteStats.groups.clear();
+    const groups = groupNotesByDate(noteStats.allNotes);
+    for (const group of Object.keys(groups)) {
+        noteStats.groups.add(group);
+    }
+    renderFilterBar();
+}
+
+function updateFilterGroups(newNotes) {
+    rebuildFilterGroups();
+}
+
+function renderFilterBar() {
+    const filterBar = document.getElementById('filterBar');
+    if (!filterBar) return;
+
+    filterBar.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = `filter-chip ${noteStats.activeGroup === 'all' ? 'active' : ''}`;
+    allBtn.setAttribute('data-group', 'all');
+    allBtn.textContent = '全部';
+    filterBar.appendChild(allBtn);
+
+    [...noteStats.groups].forEach(group => {
+        const btn = document.createElement('button');
+        btn.className = `filter-chip ${noteStats.activeGroup === group ? 'active' : ''}`;
+        btn.setAttribute('data-group', group);
+        btn.textContent = group;
+        filterBar.appendChild(btn);
+    });
+}
+
+function setActiveGroup(group) {
+    if (noteStats.activeGroup === group) return;
+    noteStats.activeGroup = group;
+
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-group') === group);
+    });
+
+    renderNotes();
+
+    if (group === 'all') {
+        document.getElementById('noMoreNotes').style.display = noteStats.hasMore ? 'none' : 'block';
+    } else {
+        document.getElementById('noMoreNotes').style.display = 'none';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
 function renderNotes() {
-    if (!notes || notes.length === 0) {
-        elements.notesList.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">
-                暂无笔记，点击“新建笔记”开启记录之旅吧 ✨
-            </div>
-        `;
+    const container = elements.notesList;
+    if (noteStats.allNotes.length === 0) {
+        container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)">暂无内容</div>`;
         return;
     }
 
-    // 按日期分组
-    const groups = groupNotesByDate(notes);
+    let displayNotes = noteStats.allNotes;
+    if (noteStats.activeGroup !== 'all') {
+        const groups = groupNotesByDate(noteStats.allNotes);
+        displayNotes = groups[noteStats.activeGroup] || [];
+    }
 
-    let html = '';
-
-    for (const [groupName, groupNotes] of Object.entries(groups)) {
-        html += `
-            <div class="time-section">
-                <h3 class="section-title">${groupName}</h3>
-                <div class="section-grid">
-                    ${groupNotes.map(note => createNoteCardHTML(note)).join('')}
+    if (noteStats.activeGroup === 'all') {
+        const groups = groupNotesByDate(displayNotes);
+        let html = '';
+        for (const [groupName, groupNotes] of Object.entries(groups)) {
+            html += `
+                <div class="time-section">
+                    <h3 class="section-title" onclick="setActiveGroup('${groupName}')" style="cursor:pointer" title="点击只看该组">${groupName} ></h3>
+                    <div class="section-grid">
+                        ${groupNotes.map(note => createNoteCardHTML(note)).join('')}
+                    </div>
                 </div>
+            `;
+        }
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = `
+            <div class="section-grid">
+                ${displayNotes.map(note => createNoteCardHTML(note)).join('')}
             </div>
         `;
     }
-
-    elements.notesList.innerHTML = html;
 }
 
 function groupNotesByDate(notesList) {
-    const groups = {}; // JS Object keys 按插入顺序
+    const groups = {};
 
-    // 统一时间参考
     const now = new Date();
-    // 设为当天 0点，用于比较日期
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
@@ -247,22 +371,18 @@ function groupNotesByDate(notesList) {
 
     notesList.forEach(note => {
         const timestamp = getNoteTime(note);
-        // 使用 timestamp 来创建一个 Date 对象
         const d = new Date(timestamp);
 
         let groupKey;
         const noteTime = d.getTime();
 
-        // 比较
         if (noteTime >= todayStart.getTime()) {
             groupKey = '今天';
         } else if (noteTime >= yesterdayStart.getTime()) {
             groupKey = '昨天';
         } else if (d.getFullYear() === currentYear) {
-            // 当年：按月分组 (e.g. "11月")
             groupKey = (d.getMonth() + 1) + '月';
         } else {
-            // 往年：按年分组 (e.g. "2023年")
             groupKey = d.getFullYear() + '年';
         }
 
@@ -272,18 +392,6 @@ function groupNotesByDate(notesList) {
         groups[groupKey].push(note);
     });
     return groups;
-}
-
-function isSameDay(d1, d2) {
-    return d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate();
-}
-
-function isSameWeek(d1, d2) {
-    const oneDay = 24 * 60 * 60 * 1000;
-    const diffDays = Math.round(Math.abs((d1 - d2) / oneDay));
-    return diffDays < 7;
 }
 
 function createNoteCardHTML(note) {
@@ -302,269 +410,27 @@ function createNoteCardHTML(note) {
     `;
 }
 
-// 全局辅助函数（方便 HTML onclick 调用）
+// 辅助函数
+window.setActiveGroup = setActiveGroup;
 window.editNote = (id) => {
-    const note = notes.find(n => n.id === id);
+    const note = noteStats.allNotes.find(n => n.id === id);
     if (note) showNoteEditor(note);
 };
+window.confirmDeleteNote = (id) => {
+    showConfirmModal(id);
+};
 
+function showNotification(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `notification ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
 
-async function executeDelete(id) {
-    const confirmBtn = document.getElementById('confirmDelete');
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = '删除中...';
+    toast.offsetHeight;
+    toast.classList.add('show');
 
-    try {
-        const response = await fetch('/api/notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete', id: id })
-        });
-
-        if (response.ok) {
-            showNotification('删除成功', 'success');
-            hideConfirmModal();
-            // 重新加载第一页，重置列表
-            loadNotes(1);
-        } else {
-            throw new Error('删除失败');
-        }
-    } catch (error) {
-        console.error('Delete error:', error);
-        showNotification('无法删除，请重试', 'error');
-    } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = '允许删除';
-    }
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
-
-// 渲染逻辑
-// 渲染逻辑
-async function loadNotes(page = 1) {
-    if (noteStats.isLoading) return;
-
-    // 如果是第一页，或者是新的过滤，重置状态
-    if (page === 1) {
-        noteStats.allNotes = [];
-        noteStats.groups.clear();
-        noteStats.hasMore = true;
-        elements.notesList.innerHTML = '';
-        renderFilterBar(); // 初始化 Filter Bar
-    }
-
-    noteStats.isLoading = true;
-    document.getElementById('loadingIndicator').style.display = 'block';
-    document.getElementById('noMoreNotes').style.display = 'none';
-
-    try {
-        console.log(`Loading notes page ${page}`);
-        const response = await fetch(`/api/notes?page=${page}&pageSize=${pageSize}`);
-
-        if (response.ok) {
-            const data = await response.json();
-            const newNotes = data.notes;
-
-            if (newNotes.length < pageSize) {
-                noteStats.hasMore = false;
-                document.getElementById('noMoreNotes').style.display = 'block';
-            }
-
-            noteStats.currentPage = page;
-            noteStats.allNotes = [...noteStats.allNotes, ...newNotes];
-
-            // 强制前端排序：最新修改（或创建）的在前
-            noteStats.allNotes.sort((a, b) => {
-                const timeA = getNoteTime(a);
-                const timeB = getNoteTime(b);
-                return timeB - timeA;
-            });
-
-            notes = noteStats.allNotes; // 保持兼容性
-
-            // 重新从排序后的全集生成 Groups，确保 Chip 顺序正确
-            rebuildFilterGroups();
-
-            // 渲染
-            renderNotes();
-        } else {
-            throw new Error('Load failed');
-        }
-    } catch (error) {
-        console.error('Failed to load:', error);
-        showNotification('加载失败', 'error');
-    } finally {
-        noteStats.isLoading = false;
-        document.getElementById('loadingIndicator').style.display = 'none';
-    }
-}
-
-// 统一的时间获取逻辑
-function getNoteTime(note) {
-    // 统一的时间获取逻辑
-    function getNoteTime(note) {
-        // 优先使用 date 字符串 (用户要求)
-        if (note.date) {
-            // 兼容 / 和 - 分隔符
-            const d = new Date(note.date.replace(/-/g, '/'));
-            if (!isNaN(d.getTime())) return d.getTime();
-        }
-
-        // 如果解析失败，才尝试 timestamp
-        if (note.timestamp) return note.timestamp;
-
-        // 最后兜底 (创建时间)
-        return Number(note.id);
-    }
-
-    function rebuildFilterGroups() {
-        // 基于已排序的 noteStats.allNotes 重新构建 Set
-        noteStats.groups.clear();
-        const groups = groupNotesByDate(noteStats.allNotes);
-        for (const group of Object.keys(groups)) {
-            noteStats.groups.add(group);
-        }
-        renderFilterBar();
-    }
-
-    function updateFilterGroups(newNotes) {
-        // 转发给重建函数
-        rebuildFilterGroups();
-    }
-
-    function renderFilterBar() {
-        const filterBar = document.getElementById('filterBar');
-        if (!filterBar) return;
-
-        // 记住当前选中状态
-        filterBar.innerHTML = '';
-
-        const allBtn = document.createElement('button');
-        allBtn.className = `filter-chip ${noteStats.activeGroup === 'all' ? 'active' : ''}`;
-        allBtn.setAttribute('data-group', 'all');
-        allBtn.textContent = '全部';
-        filterBar.appendChild(allBtn);
-
-        // 按插入顺序渲染 (因为 allNotes 已经是有序的，所以 keys 自然也是有序的)
-        [...noteStats.groups].forEach(group => {
-            const btn = document.createElement('button');
-            btn.className = `filter-chip ${noteStats.activeGroup === group ? 'active' : ''}`;
-            btn.setAttribute('data-group', group);
-            btn.textContent = group;
-            filterBar.appendChild(btn);
-        });
-    }
-
-    function setActiveGroup(group) {
-        if (noteStats.activeGroup === group) return;
-        noteStats.activeGroup = group;
-
-        // 更新 UI 状态
-        document.querySelectorAll('.filter-chip').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-group') === group);
-        });
-
-        renderNotes();
-
-        if (group === 'all') {
-            document.getElementById('noMoreNotes').style.display = noteStats.hasMore ? 'none' : 'block';
-        } else {
-            document.getElementById('noMoreNotes').style.display = 'none'; // 分组模式不显示底部提示
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    function renderNotes() {
-        const container = elements.notesList;
-        if (noteStats.allNotes.length === 0) {
-            container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)">暂无内容</div>`;
-            return;
-        }
-
-        // 过滤
-        let displayNotes = noteStats.allNotes;
-        if (noteStats.activeGroup !== 'all') {
-            const groups = groupNotesByDate(noteStats.allNotes);
-            displayNotes = groups[noteStats.activeGroup] || [];
-        }
-
-        if (noteStats.activeGroup === 'all') {
-            const groups = groupNotesByDate(displayNotes);
-            let html = '';
-            for (const [groupName, groupNotes] of Object.entries(groups)) {
-                html += `
-                <div class="time-section">
-                    <h3 class="section-title" onclick="setActiveGroup('${groupName}')" style="cursor:pointer" title="点击只看该组">${groupName} ></h3>
-                    <div class="section-grid">
-                        ${groupNotes.map(note => createNoteCardHTML(note)).join('')}
-                    </div>
-                </div>
-            `;
-            }
-            container.innerHTML = html;
-        } else {
-            // 单一组展示，直接 Grid
-            container.innerHTML = `
-            <div class="section-grid">
-                ${displayNotes.map(note => createNoteCardHTML(note)).join('')}
-            </div>
-        `;
-        }
-    }
-
-    // function groupNotesByDate removed (duplicate)
-
-
-    function isSameDay(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getDate() === d2.getDate();
-    }
-
-    function isSameWeek(d1, d2) {
-        const oneDay = 24 * 60 * 60 * 1000;
-        const diffDays = Math.round(Math.abs((d1 - d2) / oneDay));
-        return diffDays < 7;
-    }
-
-    function createNoteCardHTML(note) {
-        return `
-        <div class="note-card" style="animation-delay: ${Math.random() * 0.2}s">
-            <div class="note-info">
-                <div class="note-title" title="${note.title}">${note.title}</div>
-                <div class="note-content-preview">${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}</div>
-                <div class="note-date">${note.date}</div>
-            </div>
-            <div class="note-actions">
-                <button class="secondary" onclick="editNote(${note.id})">编辑</button>
-                <button class="danger" onclick="confirmDeleteNote(${note.id})">删除</button>
-            </div>
-        </div>
-    `;
-    }
-
-    // Global helpers needed for inline HTML onclick. Attach to window.
-    window.setActiveGroup = setActiveGroup;
-    window.editNote = (id) => {
-        // 查找时使用 allNotes，确保在任何视图下都能找到
-        const note = noteStats.allNotes.find(n => n.id === id);
-        if (note) showNoteEditor(note);
-    };
-
-    window.confirmDeleteNote = (id) => {
-        showConfirmModal(id);
-    };
-
-    function showNotification(message, type) {
-        const toast = document.createElement('div');
-        toast.className = `notification ${type}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-
-        toast.offsetHeight;
-        toast.classList.add('show');
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
