@@ -1,33 +1,59 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>笔记应用</title>
-    <!-- 更新 CSS 文件的引用路径 -->
+    <title>云端备忘录 - 简约 & 强大</title>
     <link rel="stylesheet" href="/public/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="container">
         <header>
-            <h1>云端备忘录</h1>
-            <button id="newNote">新建备忘录</button>
+            <h1>☁️ 云端备忘录</h1>
+            <button id="newNote">
+                <span>+</span> 新建笔记
+            </button>
         </header>
+        <button id="mobileFab" class="fab" title="新建笔记">+</button>
         <main>
-            <div id="notesList"></div>
+            <div id="notesList">
+                <!-- 笔记卡片将在这里渲染 -->
+            </div>
+            <div id="pagination"></div>
         </main>
     </div>
-    <!-- 更新 JavaScript 文件的引用路径 -->
+
+    <!-- 笔记编辑弹窗 -->
     <div id="noteEditorOverlay">
         <div id="noteEditor">
-            <input type="text" id="noteTitle" placeholder="标题">
-            <textarea id="noteContent" placeholder="在此输入内容..."></textarea>
-            <div class="button-group">
-                <button id="saveNote">保存</button>
+            <h2 id="editorTitle">编辑笔记</h2>
+            <input type="text" id="noteTitle" placeholder="请输入标题...">
+            <textarea id="noteContent" placeholder="在此输入你的想法..."></textarea>
+            <div class="confirm-actions">
+                <button id="saveNote">保存笔记</button>
                 <button id="cancelEdit" class="secondary">取消</button>
             </div>
         </div>
     </div>
+
+    <!-- 自定义确认弹窗 -->
+    <div id="confirmModalOverlay">
+        <div class="confirm-modal">
+            <h2>确认删除？</h2>
+            <p>删除后将无法恢复，请谨慎操作。</p>
+            <div class="confirm-actions">
+                <button id="confirmDelete" class="danger">允许删除</button>
+                <button id="cancelDelete" class="secondary">再想想</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/public/script.js"></script>
 </body>
+
 </html>

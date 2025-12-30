@@ -1,269 +1,414 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+:root {
+    --primary-color: #007aff;
+    --primary-hover: #0056b3;
+    --bg-color: #f2f2f7;
+    --container-bg: rgba(255, 255, 255, 0.7);
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --text-color: #1c1c1e;
+    --text-secondary: #8e8e93;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    --glass-blur: 15px;
+    --error-color: #ff3b30;
+    --success-color: #34c759;
+    --warning-color: #ff9500;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #0a84ff;
+        --primary-hover: #409cff;
+        --bg-color: #000000;
+        --container-bg: rgba(28, 28, 30, 0.7);
+        --card-bg: rgba(44, 44, 46, 0.8);
+        --text-color: #f2f2f7;
+        --text-secondary: #aeaeb2;
+        --border-color: rgba(255, 255, 255, 0.1);
+        --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    }
+}
+
+* {
     margin: 0;
     padding: 0;
-    background-color: #f0f0f5; /* 稍微深一点的背景色 */
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Myriad Set Pro", "SF Pro Icons", "Apple Legacy Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.5;
+    transition: background-color 0.3s, color 0.3s;
+    min-height: 100vh;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 20px;
     width: 100%;
-    box-sizing: border-box;
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    padding: 15px;
-    border-radius: 10px;
+    margin-bottom: 40px;
+    background: var(--container-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #000;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 button {
-    background-color: #007aff;
+    background-color: var(--primary-color);
     color: #fff;
     border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.1s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 button:hover {
-    background-color: #0056b3;
-    transform: translateY(-1px);
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button.secondary {
+    background-color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+button.secondary:hover {
+    background-color: var(--text-secondary);
+    opacity: 1;
+    box-shadow: none;
+}
+
+button.danger {
+    background-color: var(--error-color);
+}
+
+button.danger:hover {
+    background-color: #d72c21;
+    box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
 }
 
 #notesList {
     display: grid;
-    gap: 15px;
-    transition: opacity 0.3s ease;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
 }
 
 .note-card {
-    background: rgba(255, 255, 255, 0.9); /* 增加不透明度 */
-    backdrop-filter: blur(10px);
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 增加阴影 */
+    background: var(--card-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: 18px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px; /* 增加卡片之间的间距 */
+    animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.note-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.15);
+    border-color: var(--primary-color);
 }
 
 .note-info {
-    flex-grow: 1;
+    margin-bottom: 20px;
 }
 
 .note-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
-    margin-bottom: 5px;
-    color: #333; /* 更深的文字颜色 */
+    margin-bottom: 8px;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.note-content-preview {
+    font-size: 15px;
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 12px;
 }
 
 .note-date {
-    font-size: 14px;
-    color: #666; /* 更深的日期颜色 */
+    font-size: 13px;
+    color: var(--text-secondary);
 }
 
+.note-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.note-actions button {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+/* Editor Overlay */
 #noteEditorOverlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 2000;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
 #noteEditor {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    width: 80%;
-    max-width: 500px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg);
+    padding: 32px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
 }
 
-#noteTitle, #noteContent {
+#noteTitle,
+#noteContent {
     width: 100%;
-    border: none;
-    background-color: transparent;
-    margin-bottom: 15px;
+    border: 1px solid transparent;
+    background-color: rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 12px;
     font-size: 16px;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
+
+@media (prefers-color-scheme: dark) {
+
+    #noteTitle,
+    #noteContent {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+#noteTitle:focus,
+#noteContent:focus {
+    outline: none;
+    background-color: transparent;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
 }
 
 #noteTitle {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
 }
 
 #noteContent {
-    height: 200px;
-    resize: vertical;
+    height: 300px;
+    resize: none;
 }
 
-.button-group {
-    display: flex;
-    justify-content: space-between;
-}
-
-.secondary {
-    background-color: #8e8e93;
-}
-
-.secondary:hover {
-    background-color: #636366;
-}
-
-.note-actions button {
-    padding: 5px 10px;
-    font-size: 14px;
-}
-
-.edit-btn, .delete-btn {
-    padding: 6px 10px;
-    font-size: 12px;
-    margin-left: 5px;
-}
-
-.edit-btn {
-    background-color: #4CAF50; /* 绿色 */
-}
-
-.edit-btn:hover {
-    background-color: #45a049;
-}
-
-.delete-btn {
-    background-color: #f44336; /* 红色 */
-}
-
-.delete-btn:hover {
-    background-color: #d32f2f;
-}
-
-.notification {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
-    border-radius: 5px;
-    color: white;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.notification.show {
-    opacity: 1;
-}
-
-.notification.success {
-    background-color: #4CAF50;
-}
-
-.notification.error {
-    background-color: #f44336;
-}
-
-@media (max-width: 767px) {
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    h1 {
-        margin-bottom: 10px;
-    }
-
-    .note-card {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .note-actions {
-        margin-top: 10px;
-    }
-
-    #noteEditor {
-        width: 95%;
-        padding: 15px;
-    }
-
-    #noteContent {
-        height: 150px;
-    }
-}
-
-/* 在文件末尾添加以下样式 */
-
+/* Pagination */
 #pagination {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 20px;
-    padding: 10px 0;
+    margin-top: 40px;
+    gap: 8px;
 }
 
 .page-btn {
-    margin: 0 5px;
-    padding: 5px 10px;
-    background-color: #007aff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.page-btn:hover {
-    background-color: #0056b3;
+    padding: 8px 16px;
+    font-size: 14px;
+    background: var(--container-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(var(--glass-blur));
 }
 
 .page-btn.active {
-    background-color: #0056b3;
+    background-color: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
 }
 
-.page-ellipsis {
-    margin: 0 5px;
-    color: #333;
-}
-
-#noteEditorOverlay {
-    display: none;
-}
-
-#noteEditorOverlay.show {
-    display: flex;
-}
-
-.fade-out {
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    padding: 12px 24px;
+    border-radius: 14px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 3000;
     opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
 }
 
-.fade-in {
+.notification.show {
     opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
-#pagination {
-    transition: opacity 0.3s ease;
+.notification.success {
+    background: var(--success-color);
+}
+
+.notification.error {
+    background: var(--error-color);
+}
+
+/* Custom Confirmation Modal */
+#confirmModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.confirm-modal {
+    background: var(--card-bg);
+    padding: 32px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.confirm-modal h2 {
+    margin-bottom: 12px;
+    font-size: 20px;
+}
+
+.confirm-modal p {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* FAB for mobile */
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+    background-color: var(--primary-color);
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.4);
+    z-index: 1000;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    padding: 0;
+}
+
+.fab:hover {
+    transform: scale(1.1) translateY(-5px);
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 24px 16px;
+    }
+
+    header {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .fab {
+        display: flex;
+    }
+
+    header button#newNote {
+        display: none;
+    }
+
+    #notesList {
+        grid-template-columns: 1fr;
+    }
 }
