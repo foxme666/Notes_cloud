@@ -246,15 +246,9 @@ function groupNotesByDate(notesList) {
     const currentYear = now.getFullYear();
 
     notesList.forEach(note => {
-        // 优先使用 timestamp，没有则尝试解析 date
-        let d;
-        if (note.timestamp) {
-            d = new Date(note.timestamp);
-        } else {
-            // 兼容旧数据 date 字符串
-            d = new Date(note.date.replace(/-/g, '/'));
-            if (isNaN(d.getTime())) d = new Date(note.id); // final fallback
-        }
+        const timestamp = getNoteTime(note);
+        // 使用 timestamp 来创建一个 Date 对象
+        const d = new Date(timestamp);
 
         let groupKey;
         const noteTime = d.getTime();
@@ -380,9 +374,9 @@ async function loadNotes(page = 1) {
 
             // 强制前端排序：最新修改（或创建）的在前
             noteStats.allNotes.sort((a, b) => {
-                const timeA = a.timestamp || a.id;
-                const timeB = b.timestamp || b.id;
-                return Number(timeB) - Number(timeA);
+                const timeA = getNoteTime(a);
+                const timeB = getNoteTime(b);
+                return timeB - timeA;
             });
 
             notes = noteStats.allNotes; // 保持兼容性
@@ -402,6 +396,20 @@ async function loadNotes(page = 1) {
         noteStats.isLoading = false;
         document.getElementById('loadingIndicator').style.display = 'none';
     }
+}
+
+// 统一的时间获取逻辑
+function getNoteTime(note) {
+    if (note.timestamp) return note.timestamp;
+
+    // 尝试解析 date 字符串 (e.g. "2024/12/30 11:34")
+    if (note.date) {
+        const d = new Date(note.date.replace(/-/g, '/'));
+        if (!isNaN(d.getTime())) return d.getTime();
+    }
+
+    // 最后兜底使用 ID (创建时间戳)
+    return Number(note.id);
 }
 
 function rebuildFilterGroups() {
