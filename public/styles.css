@@ -594,20 +594,36 @@ button.danger:hover {
     }
 
     .container {
-        padding: 24px 20px;
+        padding: 16px;
     }
 
     header {
-        padding: 16px;
+        padding: 16px 20px;
         margin-bottom: 24px;
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        /* Reduced gap */
+    }
+
+    /* Specifically align the Filter Bar with the Header Content */
+    #filterBar {
+        padding: 4px 0;
+        padding-left: 20px;
+        /* Align chips with header title */
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    /* Hide the text button in header, use FAB */
+    header button {
+        display: none;
     }
 
     .fab {
         display: flex;
-    }
-
-    header button#newNote {
-        display: none;
     }
 
     .section-grid {
