@@ -400,94 +400,98 @@ async function loadNotes(page = 1) {
 
 // 统一的时间获取逻辑
 function getNoteTime(note) {
-    if (note.timestamp) return note.timestamp;
+    // 统一的时间获取逻辑
+    function getNoteTime(note) {
+        // 优先使用 date 字符串 (用户要求)
+        if (note.date) {
+            // 兼容 / 和 - 分隔符
+            const d = new Date(note.date.replace(/-/g, '/'));
+            if (!isNaN(d.getTime())) return d.getTime();
+        }
 
-    // 尝试解析 date 字符串 (e.g. "2024/12/30 11:34")
-    if (note.date) {
-        const d = new Date(note.date.replace(/-/g, '/'));
-        if (!isNaN(d.getTime())) return d.getTime();
+        // 如果解析失败，才尝试 timestamp
+        if (note.timestamp) return note.timestamp;
+
+        // 最后兜底 (创建时间)
+        return Number(note.id);
     }
 
-    // 最后兜底使用 ID (创建时间戳)
-    return Number(note.id);
-}
-
-function rebuildFilterGroups() {
-    // 基于已排序的 noteStats.allNotes 重新构建 Set
-    noteStats.groups.clear();
-    const groups = groupNotesByDate(noteStats.allNotes);
-    for (const group of Object.keys(groups)) {
-        noteStats.groups.add(group);
-    }
-    renderFilterBar();
-}
-
-function updateFilterGroups(newNotes) {
-    // 转发给重建函数
-    rebuildFilterGroups();
-}
-
-function renderFilterBar() {
-    const filterBar = document.getElementById('filterBar');
-    if (!filterBar) return;
-
-    // 记住当前选中状态
-    filterBar.innerHTML = '';
-
-    const allBtn = document.createElement('button');
-    allBtn.className = `filter-chip ${noteStats.activeGroup === 'all' ? 'active' : ''}`;
-    allBtn.setAttribute('data-group', 'all');
-    allBtn.textContent = '全部';
-    filterBar.appendChild(allBtn);
-
-    // 按插入顺序渲染 (因为 allNotes 已经是有序的，所以 keys 自然也是有序的)
-    [...noteStats.groups].forEach(group => {
-        const btn = document.createElement('button');
-        btn.className = `filter-chip ${noteStats.activeGroup === group ? 'active' : ''}`;
-        btn.setAttribute('data-group', group);
-        btn.textContent = group;
-        filterBar.appendChild(btn);
-    });
-}
-
-function setActiveGroup(group) {
-    if (noteStats.activeGroup === group) return;
-    noteStats.activeGroup = group;
-
-    // 更新 UI 状态
-    document.querySelectorAll('.filter-chip').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-group') === group);
-    });
-
-    renderNotes();
-
-    if (group === 'all') {
-        document.getElementById('noMoreNotes').style.display = noteStats.hasMore ? 'none' : 'block';
-    } else {
-        document.getElementById('noMoreNotes').style.display = 'none'; // 分组模式不显示底部提示
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
-
-function renderNotes() {
-    const container = elements.notesList;
-    if (noteStats.allNotes.length === 0) {
-        container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)">暂无内容</div>`;
-        return;
-    }
-
-    // 过滤
-    let displayNotes = noteStats.allNotes;
-    if (noteStats.activeGroup !== 'all') {
+    function rebuildFilterGroups() {
+        // 基于已排序的 noteStats.allNotes 重新构建 Set
+        noteStats.groups.clear();
         const groups = groupNotesByDate(noteStats.allNotes);
-        displayNotes = groups[noteStats.activeGroup] || [];
+        for (const group of Object.keys(groups)) {
+            noteStats.groups.add(group);
+        }
+        renderFilterBar();
     }
 
-    if (noteStats.activeGroup === 'all') {
-        const groups = groupNotesByDate(displayNotes);
-        let html = '';
-        for (const [groupName, groupNotes] of Object.entries(groups)) {
-            html += `
+    function updateFilterGroups(newNotes) {
+        // 转发给重建函数
+        rebuildFilterGroups();
+    }
+
+    function renderFilterBar() {
+        const filterBar = document.getElementById('filterBar');
+        if (!filterBar) return;
+
+        // 记住当前选中状态
+        filterBar.innerHTML = '';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = `filter-chip ${noteStats.activeGroup === 'all' ? 'active' : ''}`;
+        allBtn.setAttribute('data-group', 'all');
+        allBtn.textContent = '全部';
+        filterBar.appendChild(allBtn);
+
+        // 按插入顺序渲染 (因为 allNotes 已经是有序的，所以 keys 自然也是有序的)
+        [...noteStats.groups].forEach(group => {
+            const btn = document.createElement('button');
+            btn.className = `filter-chip ${noteStats.activeGroup === group ? 'active' : ''}`;
+            btn.setAttribute('data-group', group);
+            btn.textContent = group;
+            filterBar.appendChild(btn);
+        });
+    }
+
+    function setActiveGroup(group) {
+        if (noteStats.activeGroup === group) return;
+        noteStats.activeGroup = group;
+
+        // 更新 UI 状态
+        document.querySelectorAll('.filter-chip').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-group') === group);
+        });
+
+        renderNotes();
+
+        if (group === 'all') {
+            document.getElementById('noMoreNotes').style.display = noteStats.hasMore ? 'none' : 'block';
+        } else {
+            document.getElementById('noMoreNotes').style.display = 'none'; // 分组模式不显示底部提示
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function renderNotes() {
+        const container = elements.notesList;
+        if (noteStats.allNotes.length === 0) {
+            container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary)">暂无内容</div>`;
+            return;
+        }
+
+        // 过滤
+        let displayNotes = noteStats.allNotes;
+        if (noteStats.activeGroup !== 'all') {
+            const groups = groupNotesByDate(noteStats.allNotes);
+            displayNotes = groups[noteStats.activeGroup] || [];
+        }
+
+        if (noteStats.activeGroup === 'all') {
+            const groups = groupNotesByDate(displayNotes);
+            let html = '';
+            for (const [groupName, groupNotes] of Object.entries(groups)) {
+                html += `
                 <div class="time-section">
                     <h3 class="section-title" onclick="setActiveGroup('${groupName}')" style="cursor:pointer" title="点击只看该组">${groupName} ></h3>
                     <div class="section-grid">
@@ -495,35 +499,35 @@ function renderNotes() {
                     </div>
                 </div>
             `;
-        }
-        container.innerHTML = html;
-    } else {
-        // 单一组展示，直接 Grid
-        container.innerHTML = `
+            }
+            container.innerHTML = html;
+        } else {
+            // 单一组展示，直接 Grid
+            container.innerHTML = `
             <div class="section-grid">
                 ${displayNotes.map(note => createNoteCardHTML(note)).join('')}
             </div>
         `;
+        }
     }
-}
 
-// function groupNotesByDate removed (duplicate)
+    // function groupNotesByDate removed (duplicate)
 
 
-function isSameDay(d1, d2) {
-    return d1.getFullYear() === d2.getFullYear() &&
-        d1.getMonth() === d2.getMonth() &&
-        d1.getDate() === d2.getDate();
-}
+    function isSameDay(d1, d2) {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    }
 
-function isSameWeek(d1, d2) {
-    const oneDay = 24 * 60 * 60 * 1000;
-    const diffDays = Math.round(Math.abs((d1 - d2) / oneDay));
-    return diffDays < 7;
-}
+    function isSameWeek(d1, d2) {
+        const oneDay = 24 * 60 * 60 * 1000;
+        const diffDays = Math.round(Math.abs((d1 - d2) / oneDay));
+        return diffDays < 7;
+    }
 
-function createNoteCardHTML(note) {
-    return `
+    function createNoteCardHTML(note) {
+        return `
         <div class="note-card" style="animation-delay: ${Math.random() * 0.2}s">
             <div class="note-info">
                 <div class="note-title" title="${note.title}">${note.title}</div>
@@ -536,31 +540,31 @@ function createNoteCardHTML(note) {
             </div>
         </div>
     `;
-}
+    }
 
-// Global helpers needed for inline HTML onclick. Attach to window.
-window.setActiveGroup = setActiveGroup;
-window.editNote = (id) => {
-    // 查找时使用 allNotes，确保在任何视图下都能找到
-    const note = noteStats.allNotes.find(n => n.id === id);
-    if (note) showNoteEditor(note);
-};
+    // Global helpers needed for inline HTML onclick. Attach to window.
+    window.setActiveGroup = setActiveGroup;
+    window.editNote = (id) => {
+        // 查找时使用 allNotes，确保在任何视图下都能找到
+        const note = noteStats.allNotes.find(n => n.id === id);
+        if (note) showNoteEditor(note);
+    };
 
-window.confirmDeleteNote = (id) => {
-    showConfirmModal(id);
-};
+    window.confirmDeleteNote = (id) => {
+        showConfirmModal(id);
+    };
 
-function showNotification(message, type) {
-    const toast = document.createElement('div');
-    toast.className = `notification ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
+    function showNotification(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `notification ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
 
-    toast.offsetHeight;
-    toast.classList.add('show');
+        toast.offsetHeight;
+        toast.classList.add('show');
 
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
