@@ -21,7 +21,7 @@ export async function onRequest(context) {
   }
 
   // 如果没有匹配的路由，返回 404
-  return new Response(JSON.stringify({ error: 'Not Found' }), { 
+  return new Response(JSON.stringify({ error: 'Not Found' }), {
     status: 404,
     headers: getResponseHeaders()
   });
@@ -48,7 +48,7 @@ async function handleGetNotes(env, url) {
     console.log('Notes index string:', notesIndexString);
     let notesIndex = JSON.parse(notesIndexString || '[]');
     console.log('Parsed notes index:', notesIndex);
-    
+
     // 同步 notesIndex 和实际笔记
     let syncedNotesIndex = [];
     for (const id of notesIndex) {
@@ -64,12 +64,15 @@ async function handleGetNotes(env, url) {
       await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
       console.log('Updated notes index:', notesIndex);
     }
-    
+
+    // 按倒序排列（最新的在前面）
+    const reversedIndex = [...notesIndex].reverse();
+
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    const paginatedNoteIds = notesIndex.slice(startIndex, endIndex);
+    const paginatedNoteIds = reversedIndex.slice(startIndex, endIndex);
     console.log('Paginated note IDs:', paginatedNoteIds);
-    
+
     const paginatedNotes = await Promise.all(paginatedNoteIds.map(async (id) => {
       const noteString = await env.NOTES_KV.get(`note:${id}`);
       console.log(`Note ${id} string:`, noteString);
@@ -89,7 +92,7 @@ async function handleGetNotes(env, url) {
     }), { headers: getResponseHeaders() });
   } catch (error) {
     console.error('Error getting notes:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: getResponseHeaders()
     });
@@ -118,13 +121,13 @@ async function handlePostNote(request, env) {
       await env.NOTES_KV.put('notesIndex', JSON.stringify(notesIndex));
     }
 
-    return new Response(JSON.stringify({ message: 'Note saved successfully' }), { 
+    return new Response(JSON.stringify({ message: 'Note saved successfully' }), {
       status: 200,
       headers: getResponseHeaders()
     });
   } catch (error) {
     console.error('Error processing note:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: getResponseHeaders()
     });
@@ -136,7 +139,7 @@ async function handleDeleteNoteById(noteId, env) {
     // 首先检查笔记是否存在
     const noteString = await env.NOTES_KV.get(`note:${noteId}`);
     if (!noteString) {
-      return new Response(JSON.stringify({ error: 'Note not found' }), { 
+      return new Response(JSON.stringify({ error: 'Note not found' }), {
         status: 404,
         headers: getResponseHeaders()
       });
@@ -148,7 +151,7 @@ async function handleDeleteNoteById(noteId, env) {
     // 获取并更新索引
     let notesIndexString = await env.NOTES_KV.get('notesIndex');
     let notesIndex = JSON.parse(notesIndexString || '[]');
-    
+
     // 同步 notesIndex 和实际笔记
     let syncedNotesIndex = [];
     for (const id of notesIndex) {
@@ -163,13 +166,13 @@ async function handleDeleteNoteById(noteId, env) {
     // 更新索引
     await env.NOTES_KV.put('notesIndex', JSON.stringify(syncedNotesIndex));
 
-    return new Response(JSON.stringify({ message: 'Note deleted successfully' }), { 
+    return new Response(JSON.stringify({ message: 'Note deleted successfully' }), {
       status: 200,
       headers: getResponseHeaders()
     });
   } catch (error) {
     console.error('Error deleting note:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { 
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: getResponseHeaders()
     });
@@ -177,7 +180,7 @@ async function handleDeleteNoteById(noteId, env) {
 }
 
 function getResponseHeaders() {
-  return { 
+  return {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

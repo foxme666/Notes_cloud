@@ -21,10 +21,23 @@
         </header>
         <button id="mobileFab" class="fab" title="新建笔记">+</button>
         <main>
+            <!-- 时间筛选栏 -->
+            <div id="filterBarWrapper">
+                <div id="filterBar">
+                    <button class="filter-chip active" data-group="all">全部</button>
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
             <div id="notesList">
                 <!-- 笔记卡片将在这里渲染 -->
             </div>
-            <div id="pagination"></div>
+
+            <div id="loadingIndicator">
+                <div class="spinner"></div>
+                <span>加载更多...</span>
+            </div>
+            <div id="noMoreNotes">没有更多笔记了</div>
         </main>
     </div>
 
